@@ -589,10 +589,19 @@ export default {
   gap: .1rem;
   padding: 0;
 }
-.avatar-image {
-  float: left;
-  margin: .25rem;
-  opacity: .5;
+@media screen and (min-width: 500px) {
+  .avatar-image {
+    float: left;
+    margin: .25rem;
+    opacity: .8;
+  }
+}
+@media screen and (max-width: 500px) {
+  .avatar-image {
+    position: absolute;
+    margin: .25rem;
+    opacity: .2;
+  }
 }
 .char-left-label {
 }
