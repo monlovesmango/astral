@@ -590,7 +590,7 @@ export default {
   padding: 0;
 }
 .avatar-image {
-  position: absolute;
+  float: left;
   margin: .25rem;
   opacity: .5;
 }
