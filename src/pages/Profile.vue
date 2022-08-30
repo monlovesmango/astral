@@ -16,6 +16,16 @@
       <q-tab-panel name="posts" class='no-padding'>
         <div>
           <BasePostThread v-for="thread in threads" :key="thread[0].id" :events="thread" @add-event='addEvent'/>
+          <q-btn
+            icon='more_vert'
+            color="white"
+            text-color="black"
+            size="md"
+            label="Load Older Events"
+            flat
+            dense
+            @click="more()"
+           />
         </div>
       </q-tab-panel>
 
@@ -76,7 +86,9 @@ export default defineComponent({
       eventsSet: new Set(),
       sub: null,
       showAllContacts: false,
-      tab: 'posts'
+      tab: 'posts',
+      until: undefined,
+      since: Math.floor(Date.now()/1000 - 86400*7) // 7 days
     }
   },
 
@@ -95,6 +107,10 @@ export default defineComponent({
   },
 
   methods: {
+    more() {
+      this.until = this.since;
+      this.since -= 86400*7;
+    },
     start() {
       this.listen()
       this.$store.dispatch('useProfile', {pubkey: this.$route.params.pubkey, request: true})
@@ -113,7 +129,9 @@ export default defineComponent({
           filter: [
             {
               authors: [this.$route.params.pubkey],
-              kinds: [0, 1, 2]
+              kinds: [0, 1, 2],
+              since: this.since,
+              until: this.until,
             }
           ],
           cb: async (event, relay) => {
