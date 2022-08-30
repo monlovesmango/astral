@@ -110,6 +110,7 @@ export default defineComponent({
     more() {
       this.until = this.since;
       this.since -= 86400*7;
+      this.listen();
     },
     start() {
       this.listen()
@@ -121,9 +122,6 @@ export default defineComponent({
     },
 
     listen() {
-      this.threads = []
-      this.eventsSet = new Set()
-
       this.sub = pool.sub(
         {
           filter: [
