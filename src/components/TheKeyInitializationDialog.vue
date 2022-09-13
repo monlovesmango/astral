@@ -2,9 +2,9 @@
   <q-dialog v-model="showKeyInitialization" persistent>
     <q-card class="q-pb-xl q-pt-md q-pl-sm q-pr-sm">
       <q-card-section class="intro">
-        <h1 class="text-h6">welcome to astral</h1>
+        <h1 class="text-h6">welcome to twastral</h1>
         <BaseMarkdown>
-          astral is a decentralized, censorship resistant social platform
+          twastral is a decentralized, censorship resistant social platform
           powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. in order to participate in the Nostr
           network you will need to a public key and private key pair:
         </BaseMarkdown>
@@ -25,7 +25,7 @@
             <q-item-section>
               <q-item-label>private key</q-item-label>
               <q-item-label caption>
-                <strong>KEEP THIS SECRET!</strong> secret key used to sign for
+                <strong>KEEP THIS THIS THIS THIS  SECRET!</strong> secret key used to sign for
                 (or unlock) your public key. all content from your user public
                 key will need a signature derived from your private key before
                 being relayed. if a bad actor discovers your private key they
@@ -33,7 +33,19 @@
               </q-item-label>
             </q-item-section>
           </q-item>
+
+          <q-item>
+            <q-item-section>
+              <q-item-label>Twitter Complete user credentials</q-item-label>
+              <q-item-label caption>
+                <strong>You need to apply for Twitter credentials</strong>
+                Please obtian your Elevated Tewitter credentials from here
+                https://developer.twitter.com/en/portal/products/elevated
+              </q-item-label>
+            </q-item-section>
+          </q-item>
         </q-list>
+
       </q-card-section>
       <q-card-section class="onboard">
         <p>
@@ -50,6 +62,7 @@
           </q-btn>
         </q-btn-group>
       </q-card-section>
+
       <q-form @submit="proceed">
         <q-card-section class="key-entry">
           <h2 class="text-subtitle2">enter your key</h2>
