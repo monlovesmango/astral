@@ -31,7 +31,7 @@
       </div>
     </div>
     <img
-      alt="astral logo"
+      alt="twastral logo"
       src="~assets/astral-logo.svg"
       style="width: 200px; height: 200px"
     >
