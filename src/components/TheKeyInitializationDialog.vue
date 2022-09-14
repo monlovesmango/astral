@@ -34,16 +34,7 @@
             </q-item-section>
           </q-item>
 
-          <q-item>
-            <q-item-section>
-              <q-item-label>Twitter Complete user credentials</q-item-label>
-              <q-item-label caption>
-                <strong>You need to apply for Twitter credentials</strong>
-                Please obtian your Elevated Tewitter credentials from here
-                https://developer.twitter.com/en/portal/products/elevated
-              </q-item-label>
-            </q-item-section>
-          </q-item>
+
         </q-list>
 
       </q-card-section>
@@ -107,6 +98,7 @@
               <p v-if="key && !isKeyValid">not a valid key</p>
               <p v-if="isKeyValid">key is valid</p>
             </template>
+
             <template #append>
               <q-btn
                 v-if="hasExtension && !isKeyValid"
@@ -129,14 +121,68 @@
               ></q-btn>
             </template>
           </q-input>
+
+          <BaseMarkdown>
+           You need to apply for Twitter credentials
+          Please obtian your [Elevated Twitter credentials from here](https://developer.twitter.com/en/portal/products/elevated)
+          In order to enter your Twitter credentials please provide Nostr credentials above first.
+        </BaseMarkdown>
+
+
         </q-card-section>
+
+
       </q-form>
+
+
       <div v-if='isBeck32Key(key)'>
       {{ hexKey }}
       </div>
+
+
+      <div class="q-pa-md" style="max-width: 300px">
+    <q-input
+      ref="inputRef"
+
+      v-model="CONSUMER_KEY"
+      label="Twitter CONSUMER_KEY"
+      :rules="[ val => val.length >= 25 || 'Please use exactly 25 characters']"
+    />
+
+    <q-input
+      ref="inputRef"
+
+      v-model="CONSUMER_SECRET"
+      label="Twitter CONSUMER_SECRET"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+
+    <q-input
+      ref="inputRef"
+
+      v-model="ACCESS_TOKEN"
+      label="Twitter ACCESS_TOKEN"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+    <q-input
+      ref="inputRef"
+
+      v-model="ACCESS_TOKEN_SECRET"
+      label="Twitter ACCESS_TOKEN_SECRET"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+
+  </div>
+
+
     </q-card>
+
+
   </q-dialog>
+
+
 </template>
+
 
 <script>
 import { defineComponent } from 'vue'
