@@ -5,8 +5,8 @@
         <h1 class="text-h6">welcome to twastral</h1>
         <BaseMarkdown>
           twastral is a decentralized, censorship resistant social platform
-          powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. in order to participate in the Nostr
-          network you will need to a public key and private key pair:
+          powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. All your Tweets
+          get posted to both Nostr AND Twitter, therefore protecting you against cancellation:
         </BaseMarkdown>
 
         <q-list bordered padding class="q-mt-sm q-mb-sm">
@@ -34,6 +34,62 @@
             </q-item-section>
           </q-item>
 
+
+          <q-item>
+            <q-item-section>
+              <q-item-label>Twitter credentials</q-item-label>
+              <q-item-label caption>
+                <strong>You need to apply for Twitter credentials!</strong>
+                <BaseMarkdown>
+          Please obtian your [Elevated Twitter credentials from here](https://developer.twitter.com/en/portal/products/elevated)
+
+        </BaseMarkdown>
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
+
+          <div class="q-pa-md" style="max-width: 300px">
+    <q-input
+      ref="inputRef"
+      bottom-slots
+      outlined
+      dense
+      v-model="CONSUMER_KEY"
+      label="Twitter CONSUMER_KEY"
+      :rules="[ val => val.length >= 25 || 'Please use exactly 25 characters']"
+    />
+
+    <q-input
+      ref="inputRef"
+      bottom-slots
+      outlined
+      dense
+      v-model="CONSUMER_SECRET"
+      label="Twitter CONSUMER_SECRET"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+
+    <q-input
+      ref="inputRef"
+      bottom-slots
+      outlined
+      dense
+      v-model="ACCESS_TOKEN"
+      label="Twitter ACCESS_TOKEN"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+    <q-input
+      ref="inputRef"
+      bottom-slots
+      outlined
+      dense
+      v-model="ACCESS_TOKEN_SECRET"
+      label="Twitter ACCESS_TOKEN_SECRET"
+      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
+    />
+
+  </div>
 
         </q-list>
 
@@ -95,8 +151,8 @@
                 entering private key means astral will automatically sign with
                 your private key each time you post content
               </p>
-              <p v-if="key && !isKeyValid">not a valid key</p>
-              <p v-if="isKeyValid">key is valid</p>
+              <p v-if="key && !isKeyValid">not a valid NOSTR key or Twitter credentials missing</p>
+              <p v-if="isKeyValid">key is valid and Twitter credentials valid</p>
             </template>
 
             <template #append>
@@ -109,6 +165,7 @@
               >
                 Use Public Key from Extension
               </q-btn>
+
               <q-btn
                 type="submit"
                 unelevated
@@ -122,12 +179,6 @@
             </template>
           </q-input>
 
-          <BaseMarkdown>
-           You need to apply for Twitter credentials
-          Please obtian your [Elevated Twitter credentials from here](https://developer.twitter.com/en/portal/products/elevated)
-          In order to enter your Twitter credentials please provide Nostr credentials above first.
-        </BaseMarkdown>
-
 
         </q-card-section>
 
@@ -138,41 +189,6 @@
       <div v-if='isBeck32Key(key)'>
       {{ hexKey }}
       </div>
-
-
-      <div class="q-pa-md" style="max-width: 300px">
-    <q-input
-      ref="inputRef"
-
-      v-model="CONSUMER_KEY"
-      label="Twitter CONSUMER_KEY"
-      :rules="[ val => val.length >= 25 || 'Please use exactly 25 characters']"
-    />
-
-    <q-input
-      ref="inputRef"
-
-      v-model="CONSUMER_SECRET"
-      label="Twitter CONSUMER_SECRET"
-      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
-    />
-
-    <q-input
-      ref="inputRef"
-
-      v-model="ACCESS_TOKEN"
-      label="Twitter ACCESS_TOKEN"
-      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
-    />
-    <q-input
-      ref="inputRef"
-
-      v-model="ACCESS_TOKEN_SECRET"
-      label="Twitter ACCESS_TOKEN_SECRET"
-      :rules="[ val => val.length >= 50 || 'Please use exactly 50 characters']"
-    />
-
-  </div>
 
 
     </q-card>
@@ -212,6 +228,10 @@ export default defineComponent({
     return {
       watchOnly: false,
       key: null,
+      CONSUMER_KEY: null,
+      CONSUMER_SECRET: null,
+      ACCESS_TOKEN: null,
+      ACCESS_TOKEN_SECRET: null,
       hasExtension: false,
     }
   },
@@ -227,7 +247,9 @@ export default defineComponent({
     },
 
     isKeyKey() {
-      if (this.isKey(this.hexKey)) return true
+      if (this.isKey(this.hexKey) && this.CONSUMER_KEY.length >= 25 &&
+      this.CONSUMER_SECRET.length >= 50 && this.ACCESS_TOKEN.length >= 50 &&
+      this.ACCESS_TOKEN_SECRET.length >= 50) return true
       return false
     },
 
