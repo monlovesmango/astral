@@ -224,7 +224,10 @@ export default defineComponent({
     return {
       watchOnly: false,
       key: null,
-
+      CONSUMER_KEY: null,
+      CONSUMER_SECRET: null,
+      ACCESS_TOKEN: null,
+      ACCESS_TOKEN_SECRET: null,
       hasExtension: false,
     }
   },
