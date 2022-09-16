@@ -1,24 +1,48 @@
 <template>
   <q-page>
-    <div class="text-h5 text-bold q-py-md">{{ $t('settings') }}</div>
-    <q-separator color='accent' size='2px'/>
+    <div class="text-h5 text-bold q-py-md">{{ $t("settings") }}</div>
+    <q-separator color="accent" size="2px" />
     <q-form class="q-gutter-md q-pt-sm" @submit="setMetadata">
-      <div v-if='editingMetadata' class='flex justify-between' style='display: flex; gap: .2rem;'>
-        <q-btn label="save" color="primary" size="sm" type="submit"/>
-        <q-btn label="cancel" color="negative" size="sm" @click='cancel("metadata")'/>
+      <div
+        v-if="editingMetadata"
+        class="flex justify-between"
+        style="display: flex; gap: 0.2rem"
+      >
+        <q-btn label="save" color="primary" size="sm" type="submit" />
+        <q-btn
+          label="cancel"
+          color="negative"
+          size="sm"
+          @click="cancel('metadata')"
+        />
       </div>
-      <div class="text-bold flex justify-between no-wrap" style='font-size: 1.1rem;'>
-          {{ $t('profile') }}
-          <q-btn v-if='!editingMetadata' label="edit" color="primary" size="sm" @click='editingMetadata = true'/>
+      <div
+        class="text-bold flex justify-between no-wrap"
+        style="font-size: 1.1rem"
+      >
+        {{ $t("profile") }}
+        <q-btn
+          v-if="!editingMetadata"
+          label="edit"
+          color="primary"
+          size="sm"
+          @click="editingMetadata = true"
+        />
       </div>
-      <q-input v-model="metadata.name" filled type="text" label="Name" :disable='!editingMetadata'>
+      <q-input
+        v-model="metadata.name"
+        filled
+        type="text"
+        label="Name"
+        :disable="!editingMetadata"
+      >
         <template #before>
           <q-icon name="alternate_email" />
         </template>
       </q-input>
       <q-input
         v-model="metadata.about"
-        :disable='!editingMetadata'
+        :disable="!editingMetadata"
         filled
         autogrow
         type="text"
@@ -27,89 +51,113 @@
       />
       <q-input
         v-model.trim="metadata.picture"
-        :disable='!editingMetadata'
+        :disable="!editingMetadata"
         filled
         type="text"
         label="Picture URL"
         maxlength="150"
       >
         <template #after>
-          <BaseUserAvatar v-if="metadata.picture" :pubkey='$store.state.keys.pub' rounded/>
+          <BaseUserAvatar
+            v-if="metadata.picture"
+            :pubkey="$store.state.keys.pub"
+            rounded
+          />
         </template>
       </q-input>
       <q-input
         v-model.trim="metadata.nip05"
-        :disable='!editingMetadata'
+        :disable="!editingMetadata"
         filled
         type="text"
         label="NIP-05 Identifier"
         maxlength="50"
       />
     </q-form>
-    <q-separator color='accent' spaced/>
+    <q-separator color="accent" spaced />
     <div>
-      <div v-if='editingRelays' class='flex justify-between' style='display: flex; gap: .2rem;'>
-        <q-btn label="save" color="primary" size="sm" @click='saveRelays'/>
-        <q-btn label="cancel" color="negative" size="sm" @click='cancel("relays")'/>
+      <div
+        v-if="editingRelays"
+        class="flex justify-between"
+        style="display: flex; gap: 0.2rem"
+      >
+        <q-btn label="save" color="primary" size="sm" @click="saveRelays" />
+        <q-btn
+          label="cancel"
+          color="negative"
+          size="sm"
+          @click="cancel('relays')"
+        />
       </div>
-      <div class="text-bold flex justify-between no-wrap" style='font-size: 1.1rem;'>
-        {{ $t('relays') }}
-        <div class="text-normal flex row no-wrap" style='font-size: .9rem; gap: .4rem;'>
-          <q-btn v-if='!editingRelays' label="edit" color="primary" size="sm" @click='editingRelays = true'/>
-          <div v-if='editingRelays'>read</div>
-          <div v-if='editingRelays'>write</div>
+      <div
+        class="text-bold flex justify-between no-wrap"
+        style="font-size: 1.1rem"
+      >
+        {{ $t("relays") }}
+        <div
+          class="text-normal flex row no-wrap"
+          style="font-size: 0.9rem; gap: 0.4rem"
+        >
+          <q-btn
+            v-if="!editingRelays"
+            label="edit"
+            color="primary"
+            size="sm"
+            @click="editingRelays = true"
+          />
+          <div v-if="editingRelays">read</div>
+          <div v-if="editingRelays">write</div>
         </div>
       </div>
-      <q-list class='flex column q-pt-xs' style='gap: .2rem;'>
+      <q-list class="flex column q-pt-xs" style="gap: 0.2rem">
         <q-item
-          v-for="(url) in Object.keys(relays)"
+          v-for="url in Object.keys(relays)"
           :key="url"
-          class='flex justify-between items-center no-wrap no-padding'
-          style='min-height: 1.2rem'
+          class="flex justify-between items-center no-wrap no-padding"
+          style="min-height: 1.2rem"
         >
           <div>
-              <q-btn
-                v-if='relays[url].read || relays[url].write'
-                color="secondary"
-                size="sm"
-                label="Share"
-                :disable="
-                  hasJustSharedRelay ||
-                  !$store.getters.canSignEventsAutomatically
-                "
-                @click="shareRelay(url)"
-              />
-              <q-btn
-                v-if='editingRelays && !relays[url].read && !relays[url].write'
-                color="negative"
-                label='remove'
-                size="sm"
-                :disable="!$store.getters.canSignEventsAutomatically"
-                @click="removeRelay(url)"
-              />
-              {{ url }}
+            <q-btn
+              v-if="relays[url].read || relays[url].write"
+              color="secondary"
+              size="sm"
+              label="Share"
+              :disable="
+                hasJustSharedRelay || !$store.getters.canSignEventsAutomatically
+              "
+              @click="shareRelay(url)"
+            />
+            <q-btn
+              v-if="editingRelays && !relays[url].read && !relays[url].write"
+              color="negative"
+              label="remove"
+              size="sm"
+              :disable="!$store.getters.canSignEventsAutomatically"
+              @click="removeRelay(url)"
+            />
+            {{ url }}
           </div>
-          <div class="flex no-wrap items-center" style='gap: .6rem;'>
-              <q-toggle
-                v-if='editingRelays'
-                v-model='relays[url].read'
-                color='primary'
-                size='sm'
-                dense
-                class='no-padding'
-              />
-              <q-toggle
-                v-if='editingRelays'
-                v-model='relays[url].write'
-                color='primary'
-                size='sm'
-                dense
-                class='no-padding'
-              />
+          <div class="flex no-wrap items-center" style="gap: 0.6rem">
+            <q-toggle
+              v-if="editingRelays"
+              v-model="relays[url].read"
+              color="primary"
+              size="sm"
+              dense
+              class="no-padding"
+            />
+            <q-toggle
+              v-if="editingRelays"
+              v-model="relays[url].write"
+              color="primary"
+              size="sm"
+              dense
+              class="no-padding"
+            />
           </div>
         </q-item>
       </q-list>
-      <q-form v-if='editingRelays' class='q-py-xs' @submit="addRelay">
+      <q-form v-if="editingRelays" class="q-py-xs" @submit="addRelay">
         <q-input
           v-model="addingRelay"
           filled
@@ -131,12 +179,16 @@
       </q-form>
     </div>
 
-    <q-separator color='accent' spaced/>
+    <q-separator color="accent" spaced />
 
-    <div class="flex no-wrap" style='gap: .2rem;'>
+    <div class="flex no-wrap" style="gap: 0.2rem">
       <q-btn label="Delete Local Data" color="negative" @click="hardReset" />
-      <q-btn label="View your keys" color="primary" @click="keysDialog = true" />
-      <q-btn label="dev tools" color='secondary' :to='{ name: "devTools"}' />
+      <q-btn
+        label="View your keys"
+        color="primary"
+        @click="keysDialog = true"
+      />
+      <q-btn label="dev tools" color="secondary" :to="{ name: 'devTools' }" />
     </div>
 
     <q-dialog v-model="keysDialog">
@@ -165,6 +217,19 @@
           />
           <p>Public Key:</p>
           <q-input v-model="$store.state.keys.pub" readonly filled />
+
+          <p>Twitter CONSUMER_KEY:</p>
+          <q-input v-model="$store.state.keys.CONSUMER_KEY" readonly filled />
+          <p>Twitter CONSUMER_SECRET:</p>
+          <q-input
+            v-model="$store.state.keys.CONSUMER_SECRET"
+            readonly
+            filled
+          />
+          <p>Twitter ACCESS_TOKEN:</p>
+          <q-input v-model="$store.state.keys.ACCESS_TOKEN" readonly filled />
+          <p>Twitter ACCESS_TOKEN_SECRET:</p>
+          <q-input v-model="$store.state.keys.ACCESS_TOKEN_SECRET" readonly filled />
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
@@ -176,19 +241,19 @@
 </template>
 
 <script>
-import {LocalStorage} from 'quasar'
-import {nextTick} from 'vue'
-import {queryName} from 'nostr-tools/nip05'
+import { LocalStorage } from 'quasar'
+import { nextTick } from 'vue'
+import { queryName } from 'nostr-tools/nip05'
 
 import helpersMixin from '../utils/mixin'
-import {dbErase} from '../query'
+import { dbErase } from '../query'
 
 export default {
   name: 'Settings',
   mixins: [helpersMixin],
 
   data() {
-    const {name, picture, about, nip05} =
+    const { name, picture, about, nip05 } =
       this.$store.state.profilesCache[this.$store.state.keys.pub] || {}
 
     return {
@@ -198,13 +263,13 @@ export default {
         name,
         picture,
         about,
-        nip05
+        nip05,
       },
       relays: {},
       editingRelays: false,
       addingRelay: '',
       unsubscribe: null,
-      hasJustSharedRelay: false
+      hasJustSharedRelay: false,
     }
   },
 
@@ -222,7 +287,7 @@ export default {
     this.unsubscribe = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'addProfileToCache': {
-          const {name, picture, about, nip05} =
+          const { name, picture, about, nip05 } =
             state.profilesCache[state.keys.pub] || {}
 
           nextTick(() => {
@@ -256,8 +321,9 @@ export default {
 
   methods: {
     cloneMetadata() {
-      let {name, picture, about, nip05} = this.$store.state.profilesCache[this.$store.state.keys.pub]
-      this.metadata = {name, picture, about, nip05}
+      let { name, picture, about, nip05 } =
+        this.$store.state.profilesCache[this.$store.state.keys.pub]
+      this.metadata = { name, picture, about, nip05 }
       console.log('cloneMeta', this.metadata)
     },
     cloneRelays() {
@@ -273,7 +339,7 @@ export default {
           console.log(await queryName(this.metadata.nip05))
           this.$q.notify({
             message: 'Failed to verify NIP05 identifier on server.',
-            color: 'warning'
+            color: 'warning',
           })
 
           return
@@ -291,14 +357,15 @@ export default {
         .dialog({
           title: 'Are you sure?',
           message: `Do you really want to remove ${url} from the list of relays?`,
-          cancel: true
+          cancel: true,
         })
         .onOk(() => {
           delete this.relays[url]
         })
     },
     saveRelays() {
-      if (this.$store.getters.canSignEventsAutomatically) this.$store.commit('saveRelays', this.relays)
+      if (this.$store.getters.canSignEventsAutomatically)
+        this.$store.commit('saveRelays', this.relays)
     },
     cancel(section) {
       if (section === 'metadata') {
@@ -324,7 +391,7 @@ export default {
         .dialog({
           title: 'Are you sure?',
           message: 'Do you really want to delete all data from this device?',
-          cancel: true
+          cancel: true,
         })
         .onOk(async () => {
           LocalStorage.clear()
@@ -333,6 +400,6 @@ export default {
           window.location.reload()
         })
     },
-  }
+  },
 }
 </script>

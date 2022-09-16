@@ -1,9 +1,9 @@
 {
-  "name": "astral",
+  "name": "twastral",
   "version": "0.0.5",
-  "description": "decentralized social platform (nostr client)",
-  "productName": "astral",
-  "author": "monica <monlovesmango@protonmail.com>",
+  "description": "decentralized social platform (nostr and twitter client)",
+  "productName": "twastral",
+  "author": "jason <jason@privacy-fish>",
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",

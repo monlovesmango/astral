@@ -2,11 +2,12 @@
   <q-dialog v-model="showKeyInitialization" persistent>
     <q-card class="q-pb-xl q-pt-md q-pl-sm q-pr-sm">
       <q-card-section class="intro">
-        <h1 class="text-h6">welcome to astral</h1>
+        <h1 class="text-h6">welcome to twastral</h1>
         <BaseMarkdown>
-          astral is a decentralized, censorship resistant social platform
-          powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. in order to participate in the Nostr
-          network you will need to a public key and private key pair:
+          twastral is a decentralized, censorship resistant social platform
+          powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. All
+          your Tweets get posted to both Nostr AND Twitter, therefore protecting
+          you against cancellation:
         </BaseMarkdown>
 
         <q-list bordered padding class="q-mt-sm q-mb-sm">
@@ -25,14 +26,76 @@
             <q-item-section>
               <q-item-label>private key</q-item-label>
               <q-item-label caption>
-                <strong>KEEP THIS SECRET!</strong> secret key used to sign for
-                (or unlock) your public key. all content from your user public
-                key will need a signature derived from your private key before
-                being relayed. if a bad actor discovers your private key they
-                can impersonate you on Nostr network.
+                <strong>KEEP THIS THIS THIS THIS SECRET!</strong> secret key
+                used to sign for (or unlock) your public key. all content from
+                your user public key will need a signature derived from your
+                private key before being relayed. if a bad actor discovers your
+                private key they can impersonate you on Nostr network.
               </q-item-label>
             </q-item-section>
           </q-item>
+
+          <q-item>
+            <q-item-section>
+              <q-item-label>Twitter credentials</q-item-label>
+              <q-item-label caption>
+                <strong>You need to apply for Twitter credentials!</strong>
+                <BaseMarkdown>
+                  Please obtian your [Elevated Twitter credentials from
+                  here](https://developer.twitter.com/en/portal/products/elevated)
+                </BaseMarkdown>
+              </q-item-label>
+            </q-item-section>
+          </q-item>
+
+          <div class="q-pa-md" style="max-width: 300px">
+            <q-input
+              ref="inputRef"
+              bottom-slots
+              outlined
+              dense
+              v-model="this.CONSUMER_KEY"
+              label="Twitter CONSUMER_KEY"
+              :rules="[
+                (val) => val.length >= 25 || 'Please use exactly 25 characters',
+              ]"
+            />
+
+            <q-input
+              ref="inputRef"
+              bottom-slots
+              outlined
+              dense
+              v-model="this.CONSUMER_SECRET"
+              label="Twitter CONSUMER_SECRET"
+              :rules="[
+                (val) => val.length >= 50 || 'Please use exactly 50 characters',
+              ]"
+            />
+
+            <q-input
+              ref="inputRef"
+              bottom-slots
+              outlined
+              dense
+              v-model="this.ACCESS_TOKEN"
+              label="Twitter ACCESS_TOKEN"
+              :rules="[
+                (val) => val.length >= 50 || 'Please use exactly 50 characters',
+              ]"
+            />
+            <q-input
+              ref="inputRef"
+              bottom-slots
+              outlined
+              dense
+              v-model="this.ACCESS_TOKEN_SECRET"
+              label="Twitter ACCESS_TOKEN_SECRET"
+              :rules="[
+                (val) => val.length >= 50 || 'Please use exactly 50 characters',
+              ]"
+            />
+          </div>
         </q-list>
       </q-card-section>
       <q-card-section class="onboard">
@@ -41,15 +104,16 @@
           <strong>generate</strong> a new key pair or just take a
           <strong>look around</strong>.
         </p>
-        <q-btn-group spread unelevated class='q-gutter-xl'>
+        <q-btn-group spread unelevated class="q-gutter-xl">
           <q-btn size="sm" outline @click="generate" color="primary">
             generate
           </q-btn>
-          <q-btn size="sm" outline color="primary" :to='{ name: "feed" }'>
+          <q-btn size="sm" outline color="primary" :to="{ name: 'feed' }">
             look around
           </q-btn>
         </q-btn-group>
       </q-card-section>
+
       <q-form @submit="proceed">
         <q-card-section class="key-entry">
           <h2 class="text-subtitle2">enter your key</h2>
@@ -61,7 +125,7 @@
               :outline="!watchOnly"
               value="true"
               @click="watchOnly = true"
-              :disable='isBech32Sec'
+              :disable="isBech32Sec"
             />
             <q-btn
               size="sm"
@@ -70,7 +134,7 @@
               :outline="watchOnly"
               value="false"
               @click="watchOnly = false"
-              :disable='isBech32Pub'
+              :disable="isBech32Pub"
             />
           </q-btn-group>
           <q-input
@@ -91,9 +155,14 @@
                 entering private key means astral will automatically sign with
                 your private key each time you post content
               </p>
-              <p v-if="key && !isKeyValid">not a valid key</p>
-              <p v-if="isKeyValid">key is valid</p>
+              <p v-if="key && !isKeyValid">
+                not a valid NOSTR key or Twitter credentials missing
+              </p>
+              <p v-if="isKeyValid">
+                key is valid and Twitter credentials valid
+              </p>
             </template>
+
             <template #append>
               <q-btn
                 v-if="hasExtension && !isKeyValid"
@@ -104,6 +173,7 @@
               >
                 Use Public Key from Extension
               </q-btn>
+
               <q-btn
                 type="submit"
                 unelevated
@@ -118,8 +188,9 @@
           </q-input>
         </q-card-section>
       </q-form>
-      <div v-if='isBeck32Key(key)'>
-      {{ hexKey }}
+
+      <div v-if="isBeck32Key(key)">
+        {{ hexKey }}
       </div>
     </q-card>
   </q-dialog>
@@ -153,6 +224,10 @@ export default defineComponent({
     return {
       watchOnly: false,
       key: null,
+      CONSUMER_KEY: null,
+      CONSUMER_SECRET: null,
+      ACCESS_TOKEN: null,
+      ACCESS_TOKEN_SECRET: null,
       hasExtension: false,
     }
   },
@@ -163,12 +238,20 @@ export default defineComponent({
     },
 
     showKeyInitialization() {
-      if (['profile', 'event', 'hashtag', 'feed'].includes(this.$route.name)) return false
+      if (['profile', 'event', 'hashtag', 'feed'].includes(this.$route.name))
+        return false
       return true
     },
 
     isKeyKey() {
-      if (this.isKey(this.hexKey)) return true
+      if (
+        this.isKey(this.hexKey) &&
+        this.CONSUMER_KEY.length >= 25 &&
+        this.CONSUMER_SECRET.length >= 50 &&
+        this.ACCESS_TOKEN.length >= 50 &&
+        this.ACCESS_TOKEN_SECRET.length >= 50
+      )
+        return true
       return false
     },
 
@@ -249,7 +332,10 @@ export default defineComponent({
       } else {
         console.warn('Proceed called with invalid key', key)
       }
-
+      keys.CONSUMER_KEY = this.CONSUMER_KEY
+      keys.CONSUMER_SECRET = this.CONSUMER_SECRET
+      keys.ACCESS_TOKEN = this.ACCESS_TOKEN
+      keys.ACCESS_TOKEN_SECRET = this.ACCESS_TOKEN_SECRET
       this.$store.dispatch('initKeys', keys)
       this.$store.dispatch('launch')
       this.initializeKeys = false
@@ -284,10 +370,9 @@ export default defineComponent({
         if (hex.length === 1) hex = '0' + hex
         return s + hex
       }, '')
-    }
+    },
   },
 })
 </script>
 
-<style>
-</style>
+<style></style>

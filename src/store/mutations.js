@@ -1,13 +1,24 @@
-import {getPublicKey} from 'nostr-tools'
-import {normalizeRelayURL} from 'nostr-tools/relay'
+import { getPublicKey } from 'nostr-tools'
+import { normalizeRelayURL } from 'nostr-tools/relay'
 import {
   seedFromWords,
   generateSeedWords,
-  privateKeyFromSeed
+  privateKeyFromSeed,
 } from 'nostr-tools/nip06'
 // import Vuex from 'vuex'
 
-export function setKeys(state, {mnemonic, priv, pub} = {}) {
+export function setKeys(
+  state,
+  {
+    mnemonic,
+    priv,
+    pub,
+    CONSUMER_KEY,
+    CONSUMER_SECRET,
+    ACCESS_TOKEN,
+    ACCESS_TOKEN_SECRET,
+  } = {}
+) {
   if (!mnemonic && !priv && !pub) {
     mnemonic = generateSeedWords()
   }
@@ -21,7 +32,14 @@ export function setKeys(state, {mnemonic, priv, pub} = {}) {
     pub = getPublicKey(priv)
   }
 
-  state.keys = {priv, pub}
+  state.keys = {
+    priv,
+    pub,
+    CONSUMER_KEY,
+    CONSUMER_SECRET,
+    ACCESS_TOKEN,
+    ACCESS_TOKEN_SECRET,
+  }
 }
 
 export function setRelays(state, relays) {
@@ -38,7 +56,7 @@ export function addRelay(state, url) {
 
   state.relays[url] = {
     read: true,
-    write: true
+    write: true,
   }
 }
 
@@ -46,7 +64,7 @@ export function removeRelay(state, url) {
   delete state.relays[url]
 }
 
-export function setRelayOpt(state, {url, opt, value}) {
+export function setRelayOpt(state, { url, opt, value }) {
   if (url in state.relays) {
     state.relays[url][opt] = value
   }
@@ -78,7 +96,7 @@ export function reorderFollows(state, following) {
 
 export function addProfileToCache(
   state,
-  {pubkey, name, about, picture, nip05}
+  { pubkey, name, about, picture, nip05 }
 ) {
   if (pubkey in state.profilesCache) {
     // was here already, remove from LRU (will readd next)
@@ -86,7 +104,7 @@ export function addProfileToCache(
   }
 
   // replace the metadata in cache
-  state.profilesCache[pubkey] = {name, about, picture, nip05}
+  state.profilesCache[pubkey] = { name, about, picture, nip05 }
 
   // adding to LRU
   if (pubkey === state.keys.pub) {
@@ -102,10 +120,10 @@ export function addProfileToCache(
   }
 }
 
-export function addToNIP05VerificationCache(state, {identifier, pubkey}) {
+export function addToNIP05VerificationCache(state, { identifier, pubkey }) {
   state.nip05VerificationCache[identifier] = {
     pubkey,
-    when: Math.round(Date.now() / 1000)
+    when: Math.round(Date.now() / 1000),
   }
 }
 
@@ -125,7 +143,7 @@ export function addContactListToCache(state, event) {
       .map(([_, pubkey, relay, petname]) => ({
         pubkey,
         relay,
-        petname
+        petname,
       }))
     if (contacts.length) state.contactListCache[event.pubkey] = contacts
   } catch (err) {
@@ -158,6 +176,6 @@ export function haveReadMessage(state, peer) {
   state.lastMessageRead[peer] = Math.round(Date.now() / 1000)
 }
 
-export function setUnreadMessages(state, {peer, count}) {
+export function setUnreadMessages(state, { peer, count }) {
   state.unreadMessages[peer] = count
 }
