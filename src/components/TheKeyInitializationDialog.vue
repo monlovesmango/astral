@@ -54,7 +54,7 @@
               bottom-slots
               outlined
               dense
-              v-model="CONSUMER_KEY"
+              v-model="this.CONSUMER_KEY"
               label="Twitter CONSUMER_KEY"
               :rules="[
                 (val) => val.length >= 25 || 'Please use exactly 25 characters',
@@ -66,7 +66,7 @@
               bottom-slots
               outlined
               dense
-              v-model="CONSUMER_SECRET"
+              v-model="this.CONSUMER_SECRET"
               label="Twitter CONSUMER_SECRET"
               :rules="[
                 (val) => val.length >= 50 || 'Please use exactly 50 characters',
@@ -78,7 +78,7 @@
               bottom-slots
               outlined
               dense
-              v-model="ACCESS_TOKEN"
+              v-model="this.ACCESS_TOKEN"
               label="Twitter ACCESS_TOKEN"
               :rules="[
                 (val) => val.length >= 50 || 'Please use exactly 50 characters',
@@ -89,7 +89,7 @@
               bottom-slots
               outlined
               dense
-              v-model="ACCESS_TOKEN_SECRET"
+              v-model="this.ACCESS_TOKEN_SECRET"
               label="Twitter ACCESS_TOKEN_SECRET"
               :rules="[
                 (val) => val.length >= 50 || 'Please use exactly 50 characters',
@@ -332,7 +332,10 @@ export default defineComponent({
       } else {
         console.warn('Proceed called with invalid key', key)
       }
-
+      keys.CONSUMER_KEY = this.CONSUMER_KEY
+      keys.CONSUMER_SECRET = this.CONSUMER_SECRET
+      keys.ACCESS_TOKEN = this.ACCESS_TOKEN
+      keys.ACCESS_TOKEN_SECRET = this.ACCESS_TOKEN_SECRET
       this.$store.dispatch('initKeys', keys)
       this.$store.dispatch('launch')
       this.initializeKeys = false
