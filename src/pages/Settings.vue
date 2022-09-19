@@ -229,7 +229,11 @@
           <p>Twitter ACCESS_TOKEN:</p>
           <q-input v-model="$store.state.keys.ACCESS_TOKEN" readonly filled />
           <p>Twitter ACCESS_TOKEN_SECRET:</p>
-          <q-input v-model="$store.state.keys.ACCESS_TOKEN_SECRET" readonly filled />
+          <q-input
+            v-model="$store.state.keys.ACCESS_TOKEN_SECRET"
+            readonly
+            filled
+          />
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
@@ -251,6 +255,7 @@ import { dbErase } from '../query'
 export default {
   name: 'Settings',
   mixins: [helpersMixin],
+
 
   data() {
     const { name, picture, about, nip05 } =

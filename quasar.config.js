@@ -23,10 +23,7 @@ module.exports = configure(function (ctx) {
     // app boot file (/src/boot)
     // --> boot files are part of 'main.js'
     // https://v2.quasar.dev/quasar-cli-webpack/boot-files
-    boot: [
-      'global-components',
-      'i18n'
-    ],
+    boot: ['global-components', 'i18n'],
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-css
     css: ['app.scss'],
@@ -79,7 +76,7 @@ module.exports = configure(function (ctx) {
       extendWebpack(cfg) {
         cfg.plugins.push(
           new webpack.ProvidePlugin({
-            Buffer: ['buffer', 'Buffer']
+            Buffer: ['buffer', 'Buffer'],
           })
         )
         cfg.resolve.alias = cfg.resolve.alias || {}
@@ -106,7 +103,7 @@ module.exports = configure(function (ctx) {
       open: false, // opens browser window automatically
       headers: {
         'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp'
+        'Cross-Origin-Embedder-Policy': 'require-corp',
       },
       // proxy: {
       //   '/api': {
@@ -119,7 +116,7 @@ module.exports = configure(function (ctx) {
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-framework
     framework: {
       config: {
-        dark: true
+        dark: true,
       },
 
       // iconSet: 'material-icons', // Quasar icon set
