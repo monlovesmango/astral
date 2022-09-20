@@ -214,7 +214,7 @@ export default defineComponent({
   overflow-y: auto;
 }
 #bottom-drawer {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgb(255, 255, 255);
 }
 #navagation-buttons .q-btn{
   font-size: .6rem;

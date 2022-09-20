@@ -256,7 +256,6 @@ export default {
   name: 'Settings',
   mixins: [helpersMixin],
 
-
   data() {
     const { name, picture, about, nip05 } =
       this.$store.state.profilesCache[this.$store.state.keys.pub] || {}
