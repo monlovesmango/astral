@@ -203,6 +203,7 @@ import { validateWords } from 'nostr-tools/nip06'
 import { generatePrivateKey } from 'nostr-tools'
 import { decode } from 'bech32-buffer'
 import BaseMarkdown from 'components/BaseMarkdown.vue'
+import {getFeed} from '../utils/twitter'
 
 export default defineComponent({
   name: 'TheKeyInitializationDialog',

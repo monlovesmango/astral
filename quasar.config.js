@@ -67,6 +67,9 @@ module.exports = configure(function (ctx) {
       // 'chain' is a webpack-chain object https://github.com/neutrinojs/webpack-chain
 
       chainWebpack(chain) {
+        const nodePolyfillWebpackPlugin = require('node-polyfill-webpack-plugin')
+        chain.plugin('node-polyfill').use(nodePolyfillWebpackPlugin)
+        chain.resolve.alias.set('zlib', 'browserify-zlib')
         chain
           .plugin('eslint-webpack-plugin')
           .use(ESLintPlugin, [{ extensions: ['js', 'vue'] }])

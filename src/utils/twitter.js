@@ -13,19 +13,17 @@ const userClient = new TwitterApi({
 })
 
 
-
-
-export function getFeed() {
+export async function getFeed() {
   // OAuth2 (app-only or user context)
 // Create a client with an already known bearer token
 // const appOnlyClient = new TwitterApi('bearerToken');
 // OR - you can also create a app-only client from your consumer keys -
- appOnlyClientFromConsumer = await userClient.appLogin()
+  const appOnlyClientFromConsumer = await userClient.appLogin()
 
-  const jsTweets = await appOnlyClientFromConsumer.v2.search('JavaScript', { 'media.fields': 'url' });
+  const jsTweets = await appOnlyClientFromConsumer.v2.search('JavaScript', { 'media.fields': 'url' })
 
   // Consume every possible tweet of jsTweets (until rate limit is hit)
   for await (const tweet of jsTweets) {
-    console.log(tweet);
+    console.log(tweet)
   }
 }
