@@ -74,7 +74,14 @@
         maxlength="50"
       />
     </q-form>
+
     <q-separator color="accent" spaced />
+    <div>
+      <q-btn label="test tweet" color="primary" size="sm" @click="tryTwitter" />
+    </div>
+
+    <q-separator color="accent" spaced />
+
     <div>
       <div
         v-if="editingRelays"
@@ -214,22 +221,39 @@
             class="mb-2"
             readonly
             filled
+            dense
           />
           <p>Public Key:</p>
-          <q-input v-model="$store.state.keys.pub" readonly filled />
+          <q-input v-model="$store.state.keys.pub" readonly filled dense />
 
           <p>Twitter CONSUMER_KEY:</p>
-          <q-input v-model="$store.state.keys.CONSUMER_KEY" readonly filled />
+          <q-input
+            v-model="$store.state.keys.CONSUMER_KEY"
+            readonly
+            filled
+            dense
+          />
           <p>Twitter CONSUMER_SECRET:</p>
           <q-input
             v-model="$store.state.keys.CONSUMER_SECRET"
             readonly
             filled
+            dense
           />
           <p>Twitter ACCESS_TOKEN:</p>
-          <q-input v-model="$store.state.keys.ACCESS_TOKEN" readonly filled />
+          <q-input
+            v-model="$store.state.keys.ACCESS_TOKEN"
+            readonly
+            filled
+            dense
+          />
           <p>Twitter ACCESS_TOKEN_SECRET:</p>
-          <q-input v-model="$store.state.keys.ACCESS_TOKEN_SECRET" readonly filled />
+          <q-input
+            v-model="$store.state.keys.ACCESS_TOKEN_SECRET"
+            readonly
+            filled
+            dense
+          />
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
@@ -247,6 +271,7 @@ import { queryName } from 'nostr-tools/nip05'
 
 import helpersMixin from '../utils/mixin'
 import { dbErase } from '../query'
+import { tweetTest } from '../utils/twitter'
 
 export default {
   name: 'Settings',
@@ -363,6 +388,7 @@ export default {
           delete this.relays[url]
         })
     },
+
     saveRelays() {
       if (this.$store.getters.canSignEventsAutomatically)
         this.$store.commit('saveRelays', this.relays)
@@ -399,6 +425,14 @@ export default {
           await dbErase()
           window.location.reload()
         })
+    },
+    async tryTwitter() {
+      tweetTest(
+        this.$store.state.keys.CONSUMER_KEY,
+        this.$store.state.keys.CONSUMER_SECRET,
+        this.$store.state.keys.ACCESS_TOKEN,
+        this.$store.state.keys.ACCESS_TOKEN_SECRET
+      )
     },
   },
 }

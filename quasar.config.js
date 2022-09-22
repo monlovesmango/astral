@@ -23,10 +23,7 @@ module.exports = configure(function (ctx) {
     // app boot file (/src/boot)
     // --> boot files are part of 'main.js'
     // https://v2.quasar.dev/quasar-cli-webpack/boot-files
-    boot: [
-      'global-components',
-      'i18n'
-    ],
+    boot: ['global-components', 'i18n'],
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-css
     css: ['app.scss'],
@@ -70,6 +67,9 @@ module.exports = configure(function (ctx) {
       // 'chain' is a webpack-chain object https://github.com/neutrinojs/webpack-chain
 
       chainWebpack(chain) {
+        const nodePolyfillWebpackPlugin = require('node-polyfill-webpack-plugin')
+        chain.plugin('node-polyfill').use(nodePolyfillWebpackPlugin)
+        chain.resolve.alias.set('zlib', 'browserify-zlib')
         chain
           .plugin('eslint-webpack-plugin')
           .use(ESLintPlugin, [{ extensions: ['js', 'vue'] }])
@@ -79,7 +79,7 @@ module.exports = configure(function (ctx) {
       extendWebpack(cfg) {
         cfg.plugins.push(
           new webpack.ProvidePlugin({
-            Buffer: ['buffer', 'Buffer']
+            Buffer: ['buffer', 'Buffer'],
           })
         )
         cfg.resolve.alias = cfg.resolve.alias || {}
@@ -87,7 +87,6 @@ module.exports = configure(function (ctx) {
         cfg.resolve.fallback = cfg.resolve.fallback || {}
         cfg.resolve.fallback.buffer = require.resolve('buffer/')
         cfg.resolve.fallback.stream = require.resolve('readable-stream')
-        cfg.resolve.fallback.crypto = false
         cfg.resolve.fallback.path = false
         cfg.resolve.fallback.fs = false
         cfg.experiments = cfg.experiments || {}
@@ -106,7 +105,7 @@ module.exports = configure(function (ctx) {
       open: false, // opens browser window automatically
       headers: {
         'Cross-Origin-Opener-Policy': 'same-origin',
-        'Cross-Origin-Embedder-Policy': 'require-corp'
+        'Cross-Origin-Embedder-Policy': 'require-corp',
       },
       // proxy: {
       //   '/api': {
@@ -119,7 +118,7 @@ module.exports = configure(function (ctx) {
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-framework
     framework: {
       config: {
-        dark: true
+        dark: true,
       },
 
       // iconSet: 'material-icons', // Quasar icon set

@@ -81,7 +81,7 @@
               v-model="this.ACCESS_TOKEN"
               label="Twitter ACCESS_TOKEN"
               :rules="[
-                (val) => val.length >= 50 || 'Please use exactly 50 characters',
+                (val) => val.length >= 40 || 'Please use at least 40 characters',
               ]"
             />
             <q-input
@@ -92,7 +92,7 @@
               v-model="this.ACCESS_TOKEN_SECRET"
               label="Twitter ACCESS_TOKEN_SECRET"
               :rules="[
-                (val) => val.length >= 50 || 'Please use exactly 50 characters',
+                (val) => val.length >= 40 || 'Please use at least 40 characters',
               ]"
             />
           </div>
@@ -248,8 +248,8 @@ export default defineComponent({
         this.isKey(this.hexKey) &&
         this.CONSUMER_KEY.length >= 25 &&
         this.CONSUMER_SECRET.length >= 50 &&
-        this.ACCESS_TOKEN.length >= 50 &&
-        this.ACCESS_TOKEN_SECRET.length >= 50
+        this.ACCESS_TOKEN.length >= 45 &&
+        this.ACCESS_TOKEN_SECRET.length >= 45
       )
         return true
       return false
