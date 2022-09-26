@@ -1,9 +1,9 @@
 {
-  "name": "twastral",
+  "name": "astral",
   "version": "0.0.5",
-  "description": "decentralized social platform (nostr and twitter client)",
-  "productName": "twastral",
-  "author": "jason <jason@privacy.fish>",
+  "description": "decentralized social platform (nostr client)",
+  "productName": "astral",
+  "author": "monica <monlovesmango@protonmail.com>",
   "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.vue ./",
@@ -36,7 +36,7 @@
     "net": "^1.0.2",
     "node-fetch": "^2.6.7",
     "node-polyfill-webpack-plugin": "^2.0.1",
-    "nostr-tools": "0.23.4",
+    "nostr-tools": "0.24.1",
     "parse":"^3.4.4",
     "quasar": "^2.8.3",
     "readable-stream": "3.6.0",
