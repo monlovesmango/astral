@@ -39,11 +39,7 @@
             <q-item-section>
               <q-item-label>Twitter credentials</q-item-label>
               <q-item-label caption>
-                <strong>You need to apply for Twitter credentials!</strong>
-                <BaseMarkdown>
-                  Please obtian your [Elevated Twitter credentials from
-                  here](https://developer.twitter.com/en/portal/products/elevated)
-                </BaseMarkdown>
+                <strong>Please enter your Twitter handle, you will verify ownership in the next step</strong>
               </q-item-label>
             </q-item-section>
           </q-item>
@@ -55,44 +51,9 @@
               outlined
               dense
               v-model="this.CONSUMER_KEY"
-              label="Twitter CONSUMER_KEY"
+              label="Twitter handle without the @"
               :rules="[
-                (val) => val.length >= 25 || 'Please use exactly 25 characters',
-              ]"
-            />
-
-            <q-input
-              ref="inputRef"
-              bottom-slots
-              outlined
-              dense
-              v-model="this.CONSUMER_SECRET"
-              label="Twitter CONSUMER_SECRET"
-              :rules="[
-                (val) => val.length >= 50 || 'Please use exactly 50 characters',
-              ]"
-            />
-
-            <q-input
-              ref="inputRef"
-              bottom-slots
-              outlined
-              dense
-              v-model="this.ACCESS_TOKEN"
-              label="Twitter ACCESS_TOKEN"
-              :rules="[
-                (val) => val.length >= 40 || 'Please use at least 40 characters',
-              ]"
-            />
-            <q-input
-              ref="inputRef"
-              bottom-slots
-              outlined
-              dense
-              v-model="this.ACCESS_TOKEN_SECRET"
-              label="Twitter ACCESS_TOKEN_SECRET"
-              :rules="[
-                (val) => val.length >= 40 || 'Please use at least 40 characters',
+                (val) => val.length <= 15 || 'Please use 15 or less characters',
               ]"
             />
           </div>
@@ -225,9 +186,6 @@ export default defineComponent({
       watchOnly: false,
       key: null,
       CONSUMER_KEY: null,
-      CONSUMER_SECRET: null,
-      ACCESS_TOKEN: null,
-      ACCESS_TOKEN_SECRET: null,
       hasExtension: false,
     }
   },
@@ -246,11 +204,8 @@ export default defineComponent({
     isKeyKey() {
       if (
         this.isKey(this.hexKey) &&
-        this.CONSUMER_KEY.length >= 25 &&
-        this.CONSUMER_SECRET.length >= 50 &&
-        this.ACCESS_TOKEN.length >= 45 &&
-        this.ACCESS_TOKEN_SECRET.length >= 45
-      )
+        this.CONSUMER_KEY.length <= 15
+        )
         return true
       return false
     },
@@ -333,9 +288,6 @@ export default defineComponent({
         console.warn('Proceed called with invalid key', key)
       }
       keys.CONSUMER_KEY = this.CONSUMER_KEY
-      keys.CONSUMER_SECRET = this.CONSUMER_SECRET
-      keys.ACCESS_TOKEN = this.ACCESS_TOKEN
-      keys.ACCESS_TOKEN_SECRET = this.ACCESS_TOKEN_SECRET
       this.$store.dispatch('initKeys', keys)
       this.$store.dispatch('launch')
       this.initializeKeys = false
