@@ -107,12 +107,12 @@ module.exports = configure(function (ctx) {
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp',
       },
-      // proxy: {
-      //   '/api': {
-      //     target: 'https://astral.ninja',
-      //     secure: false,
-      //   }
-      // }
+       //proxy: {
+       //  '/api': {
+       //   target: 'https://astral.ninja',
+       //    secure: false,
+       //  }
+       //}
     },
 
     // https://v2.quasar.dev/quasar-cli-webpack/quasar-config-js#Property%3A-framework

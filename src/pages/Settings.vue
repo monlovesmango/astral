@@ -76,11 +76,9 @@
     </q-form>
 
     <q-separator color="accent" spaced />
-    <div>
-      <q-btn label="test tweet" color="primary" size="sm" @click="tryTwitter" />
-    </div>
-
+    <q-btn :href=tweet_verify_link() target="_blank" class="glossy" rounded color="deep-orange" label="Verify Twitter" />
     <q-separator color="accent" spaced />
+
 
     <div>
       <div
@@ -226,30 +224,9 @@
           <p>Public Key:</p>
           <q-input v-model="$store.state.keys.pub" readonly filled dense />
 
-          <p>Twitter CONSUMER_KEY:</p>
+          <p>Twitter username:</p>
           <q-input
             v-model="$store.state.keys.CONSUMER_KEY"
-            readonly
-            filled
-            dense
-          />
-          <p>Twitter CONSUMER_SECRET:</p>
-          <q-input
-            v-model="$store.state.keys.CONSUMER_SECRET"
-            readonly
-            filled
-            dense
-          />
-          <p>Twitter ACCESS_TOKEN:</p>
-          <q-input
-            v-model="$store.state.keys.ACCESS_TOKEN"
-            readonly
-            filled
-            dense
-          />
-          <p>Twitter ACCESS_TOKEN_SECRET:</p>
-          <q-input
-            v-model="$store.state.keys.ACCESS_TOKEN_SECRET"
             readonly
             filled
             dense
@@ -271,7 +248,6 @@ import { queryName } from 'nostr-tools/nip05'
 
 import helpersMixin from '../utils/mixin'
 import { dbErase } from '../query'
-import { tweetTest } from '../utils/twitter'
 
 export default {
   name: 'Settings',
@@ -345,6 +321,11 @@ export default {
   },
 
   methods: {
+
+    tweet_verify_link() {
+              return 'http://twitter.com/intent/tweet?url=I%20am%20backing%20up%20my%20tweets%20on%20Nostr:%20Follow%20me%20on%20https://twastral.netlify.app/' + this.$store.state.keys.pub + '?type=city_beauty'
+            },
+
     cloneMetadata() {
       let { name, picture, about, nip05 } =
         this.$store.state.profilesCache[this.$store.state.keys.pub]
@@ -426,14 +407,7 @@ export default {
           window.location.reload()
         })
     },
-    async tryTwitter() {
-      tweetTest(
-        this.$store.state.keys.CONSUMER_KEY,
-        this.$store.state.keys.CONSUMER_SECRET,
-        this.$store.state.keys.ACCESS_TOKEN,
-        this.$store.state.keys.ACCESS_TOKEN_SECRET
-      )
-    },
+
   },
 }
 </script>
