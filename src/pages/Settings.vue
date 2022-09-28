@@ -323,7 +323,7 @@ export default {
   methods: {
 
     tweet_verify_link() {
-              return 'http://twitter.com/intent/tweet?url=I%20am%20on%20Nostr:' + this.$store.state.keys.pub + '?type=city_beauty'
+              return 'http://twitter.com/intent/tweet?url=I%20am%20backing%20up%20my%20tweets%20on%20Nostr:%20Follow%20me%20on%20https://twastral.netlify.app/' + this.$store.state.keys.pub + '?type=city_beauty'
             },
 
     cloneMetadata() {
