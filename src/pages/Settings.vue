@@ -76,8 +76,9 @@
     </q-form>
 
     <q-separator color="accent" spaced />
-    <q-btn href="https://twitter.com/start/pick-quasar-flavour" target="_blank" class="glossy" rounded color="deep-orange" label="Verify Twitter" />
+    <q-btn :href=tweet_verify_link() target="_blank" class="glossy" rounded color="deep-orange" label="Verify Twitter" />
     <q-separator color="accent" spaced />
+
 
     <div>
       <div
@@ -320,6 +321,11 @@ export default {
   },
 
   methods: {
+
+    tweet_verify_link() {
+              return 'http://twitter.com/intent/tweet?url=I%20am%20on%20Nostr:' + this.$store.state.keys.pub + '?type=city_beauty'
+            },
+
     cloneMetadata() {
       let { name, picture, about, nip05 } =
         this.$store.state.profilesCache[this.$store.state.keys.pub]
