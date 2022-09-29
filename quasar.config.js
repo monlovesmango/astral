@@ -179,12 +179,12 @@ module.exports = configure(function (ctx) {
       },
 
       manifest: {
-        name: `astral`,
-        short_name: `astral`,
+        name: `twastral`,
+        short_name: `twastral`,
         description: `decentralized social platform (nostr client)`,
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#ffffff',
+        background_color: '#FFFFFF',
         theme_color: '#027be3',
         icons: [
           {

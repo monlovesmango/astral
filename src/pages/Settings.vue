@@ -76,9 +76,23 @@
     </q-form>
 
     <q-separator color="accent" spaced />
-    <q-btn :href=tweet_verify_link() target="_blank" class="glossy" rounded color="deep-orange" label="Verify Twitter" />
+    <q-btn
+      :href="tweet_verify_link()"
+      target="_blank"
+      class="glossy"
+      rounded
+      color="deep-orange"
+      label="Tweet Nostr key to Twitter"
+    />
+    <q-btn
+      :href="tweet_check_link()"
+      target="_blank"
+      class="glossy"
+      rounded
+      color="green"
+      label="Check Nostr key on Twitter"
+    />
     <q-separator color="accent" spaced />
-
 
     <div>
       <div
@@ -248,6 +262,7 @@ import { queryName } from 'nostr-tools/nip05'
 
 import helpersMixin from '../utils/mixin'
 import { dbErase } from '../query'
+import {parse} from 'parse'
 
 export default {
   name: 'Settings',
@@ -260,6 +275,7 @@ export default {
     return {
       keysDialog: false,
       editingMetadata: false,
+      twitter_data: [],
       metadata: {
         name,
         picture,
@@ -279,10 +295,10 @@ export default {
       if (curr !== prev) this.cloneRelays()
     },
   },
-
-  mounted() {
+  async mounted() {
     if (this.$route.params.showKeys) {
       this.keysDialog = true
+      this.getTheData()
     }
 
     this.unsubscribe = this.$store.subscribe((mutation, state) => {
@@ -322,9 +338,26 @@ export default {
 
   methods: {
 
+    getTheData: async (url) => {
+      let query = new parse.Query(url)
+      const results = await query.find()
+      this.myData = results // TypeError: Cannot set property 'myData' of undefined
+      console.log(this.myData)
+    },
+
+    tweet_check_link() {
+      let nitter_rss_link = 'http://bird.trom.tf/' + this.$store.state.keys.CONSUMER_KEY + '/rss'
+      let nitter_rss_content = this.getTheData(nitter_rss_link)
+      console.log(nitter_rss_content)
+      return nitter_rss_link
+    },
+
     tweet_verify_link() {
-              return 'http://twitter.com/intent/tweet?url=I%20am%20backing%20up%20my%20tweets%20on%20Nostr:%20Follow%20me%20on%20https://twastral.netlify.app/' + this.$store.state.keys.pub + '?type=city_beauty'
-            },
+      return (
+        'http://twitter.com/intent/tweet?url=I%20am%20backing%20up%20my%20tweets%20on%20Nostr:%20My%20public%20key%20is:%20' +
+        this.$store.state.keys.pub
+      )
+    },
 
     cloneMetadata() {
       let { name, picture, about, nip05 } =
@@ -407,7 +440,6 @@ export default {
           window.location.reload()
         })
     },
-
   },
 }
 </script>
