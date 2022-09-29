@@ -37,6 +37,7 @@
     "node-fetch": "^2.6.7",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "nostr-tools": "0.23.4",
+    "parse":"^3.4.4",
     "quasar": "^2.8.3",
     "readable-stream": "3.6.0",
     "tls": "^0.0.1",
