@@ -85,7 +85,7 @@
       label="Tweet Nostr key to Twitter"
     />
     <q-btn
-      :href="tweet_check_link()"
+      @click="keysDialog = true"
       target="_blank"
       class="glossy"
       rounded
@@ -245,6 +245,13 @@
             filled
             dense
           />
+          <p>Twitter username verified:</p>
+          <q-input
+            v-model="this.twitter_data"
+            readonly
+            filled
+            dense
+          />
         </q-card-section>
 
         <q-card-actions align="right" class="text-primary">
@@ -263,6 +270,7 @@ import { queryName } from 'nostr-tools/nip05'
 import helpersMixin from '../utils/mixin'
 import { dbErase } from '../query'
 import {parse} from 'parse'
+import {getAllData} from '../utils/nitter'
 
 export default {
   name: 'Settings',
@@ -275,7 +283,7 @@ export default {
     return {
       keysDialog: false,
       editingMetadata: false,
-      twitter_data: [],
+      twitter_data: getAllData(),
       metadata: {
         name,
         picture,
@@ -347,7 +355,7 @@ export default {
 
     tweet_check_link() {
       let nitter_rss_link = 'http://bird.trom.tf/' + this.$store.state.keys.CONSUMER_KEY + '/rss'
-      let nitter_rss_content = this.getTheData(nitter_rss_link)
+      let nitter_rss_content = getAllData()
       console.log(nitter_rss_content)
       return nitter_rss_link
     },
@@ -355,7 +363,7 @@ export default {
     tweet_verify_link() {
       return (
         'http://twitter.com/intent/tweet?url=I%20am%20backing%20up%20my%20tweets%20on%20Nostr:%20My%20public%20key%20is:%20' +
-        this.$store.state.keys.pub
+        this.$store.state.keys.pub + ' I am using https://twastral.netlify.app to browse and verify my Nostr profile.'
       )
     },
 
