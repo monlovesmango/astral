@@ -5,14 +5,9 @@
         <h1 class="text-h6">welcome to twastral</h1>
         <BaseMarkdown>
           twastral is a decentralized, censorship resistant social platform
-<<<<<<< HEAD
           powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. All
           your Tweets get posted to both Nostr AND Twitter, therefore protecting
           you against cancellation:
-=======
-          powered by the [Nostr](https://github.com/fiatjaf/nostr) protocol. in order to participate in the Nostr
-          network you will need to a public key and private key pair:
->>>>>>> 528ee4a (Initial Twastral commit. Edit key adding instructions)
         </BaseMarkdown>
 
         <q-list bordered padding class="q-mt-sm q-mb-sm">
@@ -31,26 +26,17 @@
             <q-item-section>
               <q-item-label>private key</q-item-label>
               <q-item-label caption>
-<<<<<<< HEAD
                 <strong>KEEP THIS THIS THIS THIS SECRET!</strong> secret key
                 used to sign for (or unlock) your public key. all content from
                 your user public key will need a signature derived from your
                 private key before being relayed. if a bad actor discovers your
                 private key they can impersonate you on Nostr network.
-=======
-                <strong>KEEP THIS THIS THIS THIS  SECRET!</strong> secret key used to sign for
-                (or unlock) your public key. all content from your user public
-                key will need a signature derived from your private key before
-                being relayed. if a bad actor discovers your private key they
-                can impersonate you on Nostr network.
->>>>>>> 528ee4a (Initial Twastral commit. Edit key adding instructions)
               </q-item-label>
             </q-item-section>
           </q-item>
 
           <q-item>
             <q-item-section>
-<<<<<<< HEAD
               <q-item-label>Twitter credentials</q-item-label>
               <q-item-label caption>
                 <strong>Please enter your Twitter handle, you will verify ownership in the next step</strong>
@@ -71,16 +57,6 @@
               ]"
             />
           </div>
-=======
-              <q-item-label>Twitter Complete user credentials</q-item-label>
-              <q-item-label caption>
-                <strong>You need to apply for Twitter credentials</strong>
-                Please obtian your Elevated Tewitter credentials from here
-                https://developer.twitter.com/en/portal/products/elevated
-              </q-item-label>
-            </q-item-section>
-          </q-item>
->>>>>>> 528ee4a (Initial Twastral commit. Edit key adding instructions)
         </q-list>
 
       </q-card-section>
