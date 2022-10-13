@@ -324,7 +324,15 @@ body {
 }
 
 #bottom-drawer {
-  background: rgba(255, 255, 255, 0.2);
+  background: $dark;
+  width: calc(100% - 4px);
+  left: 2px;
+}
+#bottom-drawer > div {
+  width: 100%;
+}
+#navagation-buttons .q-fab__actions .q-btn{
+  background: $dark !important;
 }
 #navagation-buttons .q-btn{
   font-size: .8rem;
