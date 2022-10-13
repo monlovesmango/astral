@@ -186,6 +186,7 @@ export default defineComponent({
       watchOnly: false,
       key: null,
       CONSUMER_KEY: null,
+      twitter_raw: null,
       hasExtension: false,
     }
   },
@@ -288,6 +289,7 @@ export default defineComponent({
         console.warn('Proceed called with invalid key', key)
       }
       keys.CONSUMER_KEY = this.CONSUMER_KEY
+      keys.twitter_raw = this.twitter_raw
       this.$store.dispatch('initKeys', keys)
       this.$store.dispatch('launch')
       this.initializeKeys = false

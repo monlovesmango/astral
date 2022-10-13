@@ -247,7 +247,7 @@
           />
           <p>Twitter username verified:</p>
           <q-input
-            v-model="this.twitter_data"
+            v-model='this.twitter_raw'
             readonly
             filled
             dense
@@ -283,13 +283,13 @@ export default {
     return {
       keysDialog: false,
       editingMetadata: false,
-      twitter_data: getAllData(),
       metadata: {
         name,
         picture,
         about,
         nip05,
       },
+      twitter_raw: JSON.stringify(getAllData(this.$store.state.keys.CONSUMER_KEY)),
       relays: {},
       editingRelays: false,
       addingRelay: '',
@@ -306,7 +306,6 @@ export default {
   async mounted() {
     if (this.$route.params.showKeys) {
       this.keysDialog = true
-      this.getTheData()
     }
 
     this.unsubscribe = this.$store.subscribe((mutation, state) => {
@@ -351,13 +350,6 @@ export default {
       const results = await query.find()
       this.myData = results // TypeError: Cannot set property 'myData' of undefined
       console.log(this.myData)
-    },
-
-    tweet_check_link() {
-      let nitter_rss_link = 'http://bird.trom.tf/' + this.$store.state.keys.CONSUMER_KEY + '/rss'
-      let nitter_rss_content = getAllData()
-      console.log(nitter_rss_content)
-      return nitter_rss_link
     },
 
     tweet_verify_link() {

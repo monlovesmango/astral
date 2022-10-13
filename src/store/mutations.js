@@ -14,9 +14,7 @@ export function setKeys(
     priv,
     pub,
     CONSUMER_KEY,
-    CONSUMER_SECRET,
-    ACCESS_TOKEN,
-    ACCESS_TOKEN_SECRET,
+    twitter_raw
   } = {}
 ) {
   if (!mnemonic && !priv && !pub) {
@@ -36,9 +34,7 @@ export function setKeys(
     priv,
     pub,
     CONSUMER_KEY,
-    CONSUMER_SECRET,
-    ACCESS_TOKEN,
-    ACCESS_TOKEN_SECRET,
+    twitter_raw,
   }
 }
 
