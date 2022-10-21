@@ -10,54 +10,13 @@
           you against cancellation:
         </BaseMarkdown>
 
-        <q-list bordered padding class="q-mt-sm q-mb-sm">
-          <q-item>
-            <q-item-section>
-              <q-item-label>public key</q-item-label>
-              <q-item-label caption>
-                publicly known unique ID associated with your user on the Nostr
-                network. can be shared freely. others can see your posts or
-                follow you using only your public key.
-              </q-item-label>
-            </q-item-section>
-          </q-item>
 
-          <q-item>
-            <q-item-section>
-              <q-item-label>private key</q-item-label>
-              <q-item-label caption>
-                <strong>KEEP THIS THIS THIS THIS SECRET!</strong> secret key
-                used to sign for (or unlock) your public key. all content from
-                your user public key will need a signature derived from your
-                private key before being relayed. if a bad actor discovers your
-                private key they can impersonate you on Nostr network.
-              </q-item-label>
-            </q-item-section>
-          </q-item>
+          <div id="app">
+            <div @click="downloadFile()" class="q-btn">Generate and download your identity</div>
+            <div v-for="(investor, i) in investorsList" :key="i">
 
-          <q-item>
-            <q-item-section>
-              <q-item-label>Twitter credentials</q-item-label>
-              <q-item-label caption>
-                <strong>Please enter your Twitter handle, you will verify ownership in the next step</strong>
-              </q-item-label>
-            </q-item-section>
-          </q-item>
-
-          <div class="q-pa-md" style="max-width: 300px">
-            <q-input
-              ref="inputRef"
-              bottom-slots
-              outlined
-              dense
-              v-model="this.CONSUMER_KEY"
-              label="Twitter handle without the @"
-              :rules="[
-                (val) => val.length <= 15 || 'Please use 15 or less characters',
-              ]"
-            />
+            </div>
           </div>
-        </q-list>
 
       </q-card-section>
       <q-card-section class="onboard">
@@ -165,6 +124,7 @@ import { validateWords } from 'nostr-tools/nip06'
 import { generatePrivateKey } from 'nostr-tools'
 import { decode } from 'bech32-buffer'
 import BaseMarkdown from 'components/BaseMarkdown.vue'
+import exportFromJSON from 'export-from-json'
 
 export default defineComponent({
   name: 'TheKeyInitializationDialog',
@@ -184,6 +144,22 @@ export default defineComponent({
 
   data() {
     return {
+      investorsList: [
+        {
+          id: 0,
+          name: 'Gautam',
+          email: 'gautam@example.com',
+          investment: 'Stocks',
+        },
+        {
+          id: 1,
+          name: 'Sam',
+          email: 'sam@example.com',
+          investment: 'Bonds',
+        },
+      ],
+      myUrl: '#somewhere',
+      myFilename: 'something',
       watchOnly: false,
       key: null,
       CONSUMER_KEY: null,
@@ -204,10 +180,7 @@ export default defineComponent({
     },
 
     isKeyKey() {
-      if (
-        this.isKey(this.hexKey) &&
-        this.CONSUMER_KEY.length <= 15
-        )
+      if (this.isKey(this.hexKey))
         return true
       return false
     },
@@ -258,6 +231,14 @@ export default defineComponent({
   },
 
   methods: {
+    downloadFile() {
+      const data = this.investorsList
+      const fileName = 'np-data'
+      const exportType = exportFromJSON.types.csv
+
+      if (data) exportFromJSON({ data, fileName, exportType })
+    },
+
     async getFromExtension() {
       try {
         this.key = await window.nostr.getPublicKey()
