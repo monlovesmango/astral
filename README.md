@@ -36,6 +36,13 @@ quasar build
 ./node_modules/.bin/quasar build
 ```
 
+Build the app for production in PWA mode:
+```bash
+quasar build -m pwa
+# or if quasar is not installed globally
+./node_modules/.bin/quasar build -m pwa
+```
+
 ## Docker
 
 ### Build the docker image
