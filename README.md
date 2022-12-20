@@ -4,16 +4,16 @@
 
 ## Install the dependencies
 ```bash
-yarn
+yarn install
 # or
 npm install
 ```
 
 ### Start the app in development mode (hot-code reloading, error reporting, etc.)
 ```bash
-quasar dev
-# or if quasar is not installed globally
-./node_modules/.bin/quasar dev
+yarn start
+# or
+npm run start
 ```
 
 ### Lint the files
@@ -22,6 +22,7 @@ yarn lint
 # or
 npm run lint
 ```
+
 ### Format the files
 ```bash
 yarn format
@@ -31,16 +32,16 @@ npm run format
 
 ### Build the app for production in PWA mode:
 ```bash
-quasar build -m pwa
-# or if quasar is not installed globally
-./node_modules/.bin/quasar build -m pwa
+yarn build:pwa
+# or
+npm run build:pwa
 ```
 
 ### Build the app for production in SPA mode:
 ```bash
-quasar build
-# or if quasar is not installed globally
-./node_modules/.bin/quasar build
+yarn build:spa
+# or
+npm run build:spa
 ```
 
 ## Docker
