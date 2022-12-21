@@ -344,6 +344,12 @@ export default {
           secondary: '#8be9fd',
           accent: '#6272a4',
           background: '#282a36'
+        },
+        poimandres: {
+          primary: '#5de4c7',
+          secondary: '#5fb3a1',
+          accent: '#acd7ff',
+          background: '#1c1e28'
         }
       },
       // fonts: ['Roboto', 'Open Sans', 'Noto Sans JP', 'Montserrat', 'Lato', 'Poppins', 'Roboto Condensed', 'Source Sans Pro', 'Oswald', 'Roboto Mono']
