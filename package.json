@@ -6,7 +6,7 @@
   "author": "monica <monlovesmango@protonmail.com>",
   "private": true,
   "scripts": {
-    "start": "quasar dev",
+    "dev": "quasar dev",
     "build:pwa": "quasar build -m pwa",
     "build:spa": "quasar build",
     "lint": "eslint --ext .js,.vue ./",
