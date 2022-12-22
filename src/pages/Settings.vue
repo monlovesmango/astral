@@ -347,7 +347,7 @@ export default {
         },
         poimandres: {
           primary: '#5de4c7',
-          secondary: '#5fb3a1',
+          secondary: '#5fa3b4',
           accent: '#acd7ff',
           background: '#1c1e28'
         }
