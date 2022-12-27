@@ -81,7 +81,7 @@ export function reorderFollows(state, follows) {
 
 export function addProfileToCache(
   state,
-  {pubkey, name, about, picture, nip05}
+  {pubkey, name, about, picture, nip05, lud06}
 ) {
   if (pubkey in state.profilesCache) {
     // was here already, remove from LRU (will readd next)
@@ -89,7 +89,7 @@ export function addProfileToCache(
   }
 
   // replace the metadata in cache
-  state.profilesCache[pubkey] = {name, about, picture, nip05}
+  state.profilesCache[pubkey] = {name, about, picture, nip05, lud06}
 
   // adding to LRU
   if (pubkey === state.keys.pub) {

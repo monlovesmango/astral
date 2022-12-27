@@ -58,13 +58,12 @@ export function profileDescription(state) {
   }
 }
 
-// export function profileLud06(state) {
-//   return pubkey => {
-//     console.log('lud06', pubkey, state.profilesCache[pubkey])
-//     let {lud06 = ''} = state.profilesCache[pubkey] || {}
-//     return lud06
-//   }
-// }
+export function profileLud06(state) {
+  return pubkey => {
+    let {lud06 = ''} = state.profilesCache[pubkey] || {}
+    return lud06
+  }
+}
 
 // export function contacts(state) {
 //   return (pubkey, short = true) =>

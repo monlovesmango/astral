@@ -24,6 +24,13 @@
       button-size='sm'
       @click.stop
     />
+    <BaseButtonLUD06
+      v-if='(pubkey !== $store.state.keys.pub) && ($store.state.keys.pub)'
+      :pubkey='pubkey'
+      button-size='sm'
+      text-color='secondary'
+      @click.stop
+    />
   </div>
 </template>
 
@@ -32,6 +39,7 @@ import { defineComponent } from 'vue'
 import BaseButtonMessage from 'components/BaseButtonMessage.vue'
 import BaseButtonFollow from 'components/BaseButtonFollow.vue'
 import BaseButtonCopy from 'components/BaseButtonCopy.vue'
+import BaseButtonLUD06 from 'components/BaseButtonLUD06.vue'
 import helpersMixin from '../utils/mixin'
 
 export default defineComponent({
@@ -57,6 +65,7 @@ export default defineComponent({
     BaseButtonMessage,
     BaseButtonFollow,
     BaseButtonCopy,
+    BaseButtonLUD06,
   },
 
   computed: {
