@@ -27,9 +27,6 @@
     <BaseButtonLUD06
       v-if='(pubkey !== $store.state.keys.pub) && ($store.state.keys.pub)'
       :pubkey='pubkey'
-      button-size='sm'
-      text-color='secondary'
-      @click.stop
     />
   </div>
 </template>

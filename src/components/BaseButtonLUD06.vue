@@ -26,8 +26,8 @@
         <q-card-section style="max-height: 50vh" class="scroll">
           <q-list bordered separator>
 
-            <q-item clickable v-ripple v-for="(wallet, key) in wallets" :key='key'>
-              <q-item clickable v-ripple :href="wallet.prefix + this.lud06">
+            <div v-for="(wallet, key) in wallets" :key='key'>
+              <q-item clickable v-ripple @click='openInWallet(wallet.prefix)'>
                 <q-item-section avatar>
                   <q-img
                     :src="'wallet-icons/' + wallet.image"
@@ -38,7 +38,7 @@
 
                 <q-item-section>{{wallet.name}}</q-item-section>
               </q-item>
-            </q-item>
+            </div>
 
 
           </q-list>
@@ -48,7 +48,7 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Copy LNURL" color="primary" v-close-popup  @click='copy' />
-          <q-btn flat label="Open in Default Wallet" color="primary" v-close-popup @click='openDefaultWallet' />
+          <q-btn flat label="Open in Default Wallet" color="primary" v-close-popup @click='openInWallet()' />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -58,7 +58,7 @@
 import { defineComponent, nextTick } from 'vue'
 import helpersMixin from '../utils/mixin'
 import {Notify} from 'quasar'
-
+import { destroyStreams } from '../query'
 
 export default defineComponent({
   name: 'BaseButtonLUD06',
@@ -90,11 +90,6 @@ export default defineComponent({
           name: 'Zeus LN',
           prefix: 'zeusln:lightning:',
           image: 'zeusln.jpg',
-        },
-        {
-          name: 'Bitcoin Jungle',
-          prefix: 'bitcoinjungle://',
-          image: 'bj.jpg',
         },
         {
           name: 'Bitcoin Beach',
@@ -147,10 +142,26 @@ export default defineComponent({
       })
     },
 
-    openDefaultWallet() {
-      window.location = `lightning:${this.lud06}`
-    },
+    openInWallet(prefix) {
+      // temporarily disable the "leave page?" prompt when user clicks
+      window.onbeforeunload = null
 
+      if (!prefix) {
+        prefix = 'lightning:'
+      }
+
+      window.open(`${prefix}${this.lud06}`, '_self')
+
+      this.toggleWalletPicker()
+
+      // once we have our own link done, re-instate the "leave page?" prompt
+      setTimeout(() => {
+        // destroy streams before unloading window
+        window.onbeforeunload = async () => {
+          await destroyStreams()
+        }
+      }, 500)
+    }
   }
 })
 </script>
