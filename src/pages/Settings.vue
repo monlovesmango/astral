@@ -485,6 +485,17 @@ export default {
         }
       }
 
+      if (this.metadata.lud06) {
+        if (this.metadata.lud06.toLowerCase().indexOf('lnurl') !== 0) {
+          this.$q.notify({
+            message: 'Invalid lud06 identifier, must start with LNURL.',
+            color: 'warning'
+          })
+
+          return
+        }
+      }
+
       if (!Object.keys(this.$store.state.relays).length) this.saveRelays()
       this.$store.dispatch('setMetadata', this.metadata)
       this.editingMetadata = false
