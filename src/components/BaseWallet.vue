@@ -103,7 +103,7 @@ export default defineComponent({
     link: {
       type: String,
       required: true,
-      default: null,
+      default: '',
     },
     extended: {
       type: Boolean,

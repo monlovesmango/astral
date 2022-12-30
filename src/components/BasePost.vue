@@ -116,7 +116,7 @@
           :color="replying ? 'primary' : ''"
           :class='replying ? "justify-between" : "justify-end"'
         >
-          <div class='text-primary text-thin col q-pl-xs' style=' font-size: 90%; font-weight: 300;'>{{replyMode}}</div>
+          <div v-if='replyMode && replyMode !== "tip"' class='text-primary text-thin col q-pl-xs' style=' font-size: 90%; font-weight: 300;'>{{replyMode}}</div>
           <div class='flex row no-wrap'>
             <q-tabs
               v-model='replyMode'
@@ -156,11 +156,16 @@
                   </q-tooltip>
                 </q-icon>
               </q-tab>
+              <q-tab name='tip' class='no-padding'>
+                <BaseButtonLUD06
+                  :pubkey='event.pubkey'
+                />
+              </q-tab>
             </q-tabs>
             <div class='flex row no-wrap items-center'>
-              <q-separator v-if='replyMode' color='primary' size='1px' vertical spaced :class='highlighted ? "q-mt-sm" : "q-mt-xs"'/>
+              <q-separator v-if='replyMode && replyMode !== "tip"' color='primary' size='1px' vertical spaced :class='highlighted ? "q-mt-sm" : "q-mt-xs"'/>
               <q-btn
-                v-if='replyMode'
+                v-if='replyMode && replyMode !== "tip"'
                 icon="close"
                 color='primary'
                 flat
@@ -177,7 +182,7 @@
         </div>
         <div v-else style='min-height: 1rem;'/>
       </q-item-section>
-      <q-item-section v-if="replyMode" class='new-reply-box' ref='replyContent'>
+      <q-item-section v-if="replyMode && replyMode !== 'tip'" class='new-reply-box' ref='replyContent'>
         <q-tab-panels
           v-model="replyPanel"
           class='no-padding full-width overflow-hidden'
@@ -230,6 +235,7 @@ import BaseButtonInfo from 'components/BaseButtonInfo.vue'
 import BaseButtonCopy from 'components/BaseButtonCopy.vue'
 import BaseMarkdown from 'components/BaseMarkdown.vue'
 import BaseRelayRecommend from 'components/BaseRelayRecommend.vue'
+import BaseButtonLUD06 from 'components/BaseButtonLUD06.vue'
 import * as DOMPurify from 'dompurify'
 
 export default defineComponent({
@@ -249,6 +255,7 @@ export default defineComponent({
     BaseButtonCopy,
     BaseMarkdown,
     BaseRelayRecommend,
+    BaseButtonLUD06,
   },
 
   data() {
