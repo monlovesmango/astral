@@ -86,6 +86,11 @@ export default defineComponent({
           image: 'wos.jpg',
         },
         {
+          name: 'Blixt',
+          prefix: 'blixtwallet:lightning:',
+          image: 'blixt.png',
+        },
+        {
           name: 'Zeus LN',
           prefix: 'zeusln:lightning:',
           image: 'zeusln.jpg',
