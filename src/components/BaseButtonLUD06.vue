@@ -1,6 +1,7 @@
 <template>
     <BaseWallet
-      :link='lud06' />
+      :link='lud06'
+      :size='size' />
 </template>
 
 <script>
@@ -28,6 +29,11 @@ export default defineComponent({
       type: String,
       required: true,
       default: null,
+    },
+    size: {
+      type: String,
+      required: false,
+      default: 'sm',
     }
   },
 

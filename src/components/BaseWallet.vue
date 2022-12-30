@@ -2,12 +2,12 @@
     <q-btn
       v-if="link"
       icon="bolt"
-      class='button-wallet q-pr-xs'
+      :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet")'
       clickable
-      @click='toggleWalletPicker'
+      @click.stop='toggleWalletPicker'
       :label='(extended) ? ("open in wallet") : ""'
       align="left"
-      size='sm'
+      :size='size'
       unelevated
       dense
       :outline="extended"
@@ -110,6 +110,11 @@ export default defineComponent({
       requred: false,
       default: false,
     },
+    size: {
+      type: String,
+      required: false,
+      default: 'sm',
+    }
   },
 
   methods: {

@@ -159,6 +159,7 @@
               <q-tab name='tip' class='no-padding'>
                 <BaseButtonLUD06
                   :pubkey='event.pubkey'
+                  :size='highlighted ? "md" : "sm"'
                 />
               </q-tab>
             </q-tabs>
