@@ -32,20 +32,22 @@ export default defineComponent({
   },
 
   mounted() {
-    this.unsubscribe = this.$store.subscribe((mutation, state) => {
-      switch (mutation.type) {
-        case 'addProfileToCache': {
-          const {lud06} = state.profilesCache[this.pubkey] || {}
-          nextTick(() => {
-            setTimeout(() => {
-              if (!this.lud06 && lud06) this.lud06 = lud06
-            }, 1)
-          })
+    if (!this.lud06) {
+      this.unsubscribe = this.$store.subscribe((mutation, state) => {
+        switch (mutation.type) {
+          case 'addProfileToCache': {
+            const {lud06} = state.profilesCache[this.pubkey] || {}
+            nextTick(() => {
+              setTimeout(() => {
+                if (!this.lud06 && lud06) this.lud06 = lud06
+              }, 1)
+            })
 
-          break
+            break
+          }
         }
-      }
-    })
+      })
+    }
   },
 
   beforeUnmount() {
