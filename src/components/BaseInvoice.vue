@@ -10,8 +10,8 @@
         <div v-if='expires'>expires date: {{dateUTC(expires)}}</div>
         <div v-if='expires'>expires time: {{ timeUTC(expires)}}</div>
         <div class='flex row no-wrap justify-start q-pt-xs' style='gap: .5rem;'>
-          <BaseButtonCopy :button-text='request' button-label='copy invoice' outline class='q-pr-xs' @click.stop='showQr=false'/>
           <q-btn label='show qr' icon='qr_code_2' outline size='sm' dense unelevated class='q-pr-xs' @click.stop='renderQr'/>
+          <BaseWallet :link='request' extended />
         </div>
       </div>
       <div class='flex column' style='font-size: .7rem; padding: .4rem;' :style='showQr ? "" : "width: 40%"'>
@@ -24,7 +24,7 @@
 
 <script>
 import helpersMixin from '../utils/mixin'
-import BaseButtonCopy from '../components/BaseButtonCopy'
+import BaseWallet from 'components/BaseWallet.vue'
 import qrcodegen from 'nayuki-qr-code-generator'
 // import {toSvgString} from 'awesome-qr-code-generator'
 
@@ -33,7 +33,7 @@ export default {
   mixins: [helpersMixin],
   props: {invoice: {type: Object, required: true}},
   components: {
-    BaseButtonCopy
+    BaseWallet,
   },
 
   data() {
