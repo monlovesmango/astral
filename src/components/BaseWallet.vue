@@ -5,23 +5,23 @@
       :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet") + (timer !== null ? " active " : "")'
       clickable
       @click.stop='openWalletPicker'
-      @touchend.stop='openWalletPicker'
-      @mouseleave.stop='timer !== null && openWalletPicker()'
+      @touchend.prevent='openWalletPicker'
+      @mouseleave.prevent='timer !== null && openWalletPicker()'
       :label='(extended) ? ("open in wallet") : ""'
       align="left"
       :size='size'
       unelevated
       dense
       :outline="extended"
-      @mousedown.stop='incrementTip'
-      @touchstart.stop='incrementTip'
+      @mousedown.prevent='incrementTip'
+      @touchstart.prevent='incrementTip'
     >
       <span v-if="tipAmount > 0">
         <b>{{tipAmount}}</b>
       </span>
     </q-btn>
 
-     <q-dialog :model-value="showWalletPicker" @update:model-value="closeWalletPicker">
+     <q-dialog :model-value="showWalletPicker" @update:model-value="closeWalletPicker" auto-close='false' allow-focus-outside='true'>
       <q-card>
         <q-card-section>
           <div class="text-h6" v-if='tipAmount === 0'>Select a Wallet</div>
