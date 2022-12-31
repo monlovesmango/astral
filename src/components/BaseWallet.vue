@@ -2,26 +2,26 @@
     <q-btn
       v-if="link"
       icon="bolt"
-      :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet")'
+      :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet") + (timer !== null ? " active " : "")'
       clickable
-      @mouseup.stop='openWalletPicker'
+      @click.stop='openWalletPicker'
       @touchend.stop='openWalletPicker'
+      @mouseleave.stop='timer !== null && openWalletPicker()'
       :label='(extended) ? ("open in wallet") : ""'
       align="left"
       :size='size'
       unelevated
       dense
       :outline="extended"
-      @mousedown='incrementTip'
-      @touchstart='incrementTip'
-      @click.stop=''
+      @mousedown.stop='incrementTip'
+      @touchstart.stop='incrementTip'
     >
       <span v-if="tipAmount > 0">
         <b>{{tipAmount}}</b>
       </span>
     </q-btn>
 
-     <q-dialog :modelValue="showWalletPicker" @update:modelValue="closeWalletPicker">
+     <q-dialog :model-value="showWalletPicker" @update:model-value="closeWalletPicker">
       <q-card>
         <q-card-section>
           <div class="text-h6" v-if='tipAmount === 0'>Select a Wallet</div>
@@ -197,7 +197,6 @@ export default defineComponent({
     },
 
     async openInWallet(prefix) {
-      console.log('mouseup!!', this.fibonacciNum)
       // temporarily disable the "leave page?" prompt when user clicks
       window.onbeforeunload = null
 
@@ -242,7 +241,14 @@ export default defineComponent({
             url += new URLSearchParams(req.params)
           }
 
-          return fetch(url).then((res) => res.json())
+          return fetch(url)
+            .then((res) => res.json())
+            .catch((err) => {
+              Notify.create({
+                message: 'Error fetching invoice from LNURL. ' + err.toString()
+              })
+              this.closeWalletPicker()
+            })
         }
       })
 
@@ -259,5 +265,16 @@ export default defineComponent({
 }
 .button-wallet:hover {
   opacity: 1;
+}
+.button-wallet.active {
+  animation: tipBubble 0.5s ease-in-out 0s infinite alternate none;
+}
+@keyframes tipBubble {
+  0% {
+    transform: scale(0.5);
+  }
+  100% {
+    transform: scale(1.8);
+  }
 }
 </style>
