@@ -9,6 +9,31 @@
           button-size='xs'
         />
       </div>
+      <q-tooltip anchor="top middle" self="bottom middle" :delay="1500">
+        <div>
+          <BaseUserAvatar
+            :pubkey="pubkey"
+            :align-right='alignRight'
+            :size='headerMode ? "10rem" : "lg"'
+            :class='headerMode ? "self-center" : ""'
+          />
+        </div>
+        <q-item-section
+          :class='headerMode ? "self-start" : ""'
+          :style='!headerMode ? "white-space: nowrap; overflow: auto;" : ""'
+        >
+          <BaseUserName
+            :pubkey="pubkey"
+            :header-mode='headerMode'
+            :show-verified='true'
+            :class='headerMode ? " text-h6" : ""'
+            :align-right='alignRight'
+            :show-following='showFollowing'
+            :wrap='wrap'
+          />
+          <div>{{ $store.getters.profileDescription(pubkey) }}</div>
+        </q-item-section>
+      </q-tooltip>
     </q-avatar>
   </div>
 </template>
