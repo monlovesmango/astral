@@ -4,23 +4,28 @@
       icon="bolt"
       :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet")'
       clickable
-      @click.stop='toggleWalletPicker'
+      @mouseup.stop='openWalletPicker'
+      @touchend.stop='openWalletPicker'
       :label='(extended) ? ("open in wallet") : ""'
       align="left"
       :size='size'
       unelevated
       dense
       :outline="extended"
+      @mousedown='incrementTip'
+      @touchstart='incrementTip'
+      @click.stop=''
     >
-      <q-tooltip v-if="!extended">
-        view link
-      </q-tooltip>
+      <span v-if="tipAmount > 0">
+        <b>{{tipAmount}}</b>
+      </span>
     </q-btn>
 
-     <q-dialog v-model="showWalletPicker">
+     <q-dialog :modelValue="showWalletPicker" @update:modelValue="closeWalletPicker">
       <q-card>
         <q-card-section>
-          <div class="text-h6">Select a Wallet</div>
+          <div class="text-h6" v-if='tipAmount === 0'>Select a Wallet</div>
+          <div class="text-h6" v-if='tipAmount > 0'>Send {{ tipAmount }} sats</div>
         </q-card-section>
 
         <q-separator />
@@ -35,7 +40,12 @@
                     :src="'wallet-icons/' + wallet.image"
                     spinner-color="white"
                     style="height: 50px; width: 50px;"
+                    v-if="!loadingInvoice"
                   />
+                  <q-spinner-puff
+                    color="primary"
+                    size="2em"
+                    v-if="loadingInvoice" />
                 </q-item-section>
 
                 <q-item-section>{{wallet.name}}</q-item-section>
@@ -61,6 +71,7 @@ import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
 import {Notify} from 'quasar'
 import { destroyStreams } from '../query'
+import { requestInvoice } from 'lnurl-pay'
 
 export default defineComponent({
   name: 'BaseWallet',
@@ -69,7 +80,25 @@ export default defineComponent({
   data() {
     return {
       showWalletPicker: false,
+      fibonacciNum: 0,
+      loadingInvoice: false,
+      timer: null,
       wallets: [
+        {
+          name: 'Strike',
+          prefix: 'strike:',
+          image: 'strike.jpg',
+        },
+        {
+          name: 'Cash App',
+          prefix: 'squarecash://',
+          image: 'cashapp.jpg',
+        },
+        {
+          name: 'Muun',
+          prefix: 'muun:',
+          image: 'muun.jpg',
+        },
         {
           name: 'Breez',
           prefix: 'breez:',
@@ -122,9 +151,23 @@ export default defineComponent({
     }
   },
 
+  computed: {
+    tipAmount() {
+      return this.binet(this.fibonacciNum)
+    },
+  },
+
   methods: {
-    toggleWalletPicker() {
-      this.showWalletPicker = !this.showWalletPicker
+    openWalletPicker() {
+      this.showWalletPicker = true
+      this.cancelTimer()
+    },
+
+    closeWalletPicker() {
+      this.showWalletPicker = false
+      this.fibonacciNum = 0
+      this.loadingInvoice = false
+      this.cancelTimer()
     },
 
     copy() {
@@ -135,7 +178,26 @@ export default defineComponent({
       })
     },
 
-    openInWallet(prefix) {
+    incrementTip() {
+      this.timer = setTimeout(() => {
+        this.fibonacciNum++
+        this.incrementTip()
+      }, 325)
+    },
+
+    binet(n) {
+      return Math.round((Math.pow((1 + Math.sqrt(5)) / 2, n) - Math.pow((1 - Math.sqrt(5)) / 2, n)) / Math.sqrt(5))
+    },
+
+    cancelTimer() {
+      if (this.timer) {
+        clearTimeout(this.timer)
+        this.timer = null
+      }
+    },
+
+    async openInWallet(prefix) {
+      console.log('mouseup!!', this.fibonacciNum)
       // temporarily disable the "leave page?" prompt when user clicks
       window.onbeforeunload = null
 
@@ -143,9 +205,12 @@ export default defineComponent({
         prefix = 'lightning:'
       }
 
-      window.open(`${prefix}${this.link}`, '_self')
+      this.loadingInvoice = true
+      const invoice = await this.getInvoice(this.binet(this.fibonacciNum))
 
-      this.toggleWalletPicker()
+      window.open(`${prefix}${invoice}`, '_self')
+
+      this.closeWalletPicker()
 
       // once we have our own link done, re-instate the "leave page?" prompt
       setTimeout(() => {
@@ -154,6 +219,34 @@ export default defineComponent({
           await destroyStreams()
         }
       }, 500)
+    },
+
+    async getInvoice(amount) {
+      if (this.link.toLowerCase().indexOf('lnbc') === 0) {
+        return this.link
+      }
+
+      if (!amount) {
+        return this.link
+      }
+
+      const { invoice } = await requestInvoice({
+        lnUrlOrAddress: this.link,
+        tokens: amount, // satoshis
+        fetchGet: (req) => {
+          // TODO :: need to talk about this...workaround
+          let url = `https://no.str.cr/proxy/${req.url}`
+
+          if (req.params) {
+            url += '?'
+            url += new URLSearchParams(req.params)
+          }
+
+          return fetch(url).then((res) => res.json())
+        }
+      })
+
+      return invoice
     }
   }
 })

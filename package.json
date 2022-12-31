@@ -23,6 +23,7 @@
     "emoji-mart-vue-fast": "^10.2.1",
     "identicon.js": "2.3",
     "light-bolt11-decoder": "^2.1.0",
+    "lnurl-pay": "^2.1.0",
     "markdown-it": "13.0",
     "markdown-it-deflist": "2.1",
     "markdown-it-emoji": "^2.0.2",
