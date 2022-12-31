@@ -229,30 +229,38 @@ export default defineComponent({
         return this.link
       }
 
-      const { invoice } = await requestInvoice({
-        lnUrlOrAddress: this.link,
-        tokens: amount, // satoshis
-        fetchGet: (req) => {
-          // TODO :: need to talk about this...workaround
-          let url = `https://no.str.cr/proxy/${req.url}`
+      try {
+        const { invoice } = await requestInvoice({
+          lnUrlOrAddress: this.link,
+          tokens: amount, // satoshis
+          fetchGet: (req) => {
+            // TODO :: need to talk about this...workaround
+            let url = `https://no.str.cr/proxy/${req.url}`
 
-          if (req.params) {
-            url += '?'
-            url += new URLSearchParams(req.params)
-          }
+            if (req.params) {
+              url += '?'
+              url += new URLSearchParams(req.params)
+            }
 
-          return fetch(url)
-            .then((res) => res.json())
-            .catch((err) => {
-              Notify.create({
-                message: 'Error fetching invoice from LNURL. ' + err.toString()
+            return fetch(url)
+              .then((res) => res.json())
+              .catch((err) => {
+                Notify.create({
+                  message: 'Error fetching invoice from LNURL. ' + err.toString()
+                })
+                this.closeWalletPicker()
               })
-              this.closeWalletPicker()
-            })
-        }
-      })
+          }
+        })
 
-      return invoice
+        return invoice
+      } catch (e) {
+        Notify.create({
+          message: 'Error fetching invoice from LNURL. ' + e.toString()
+        })
+
+        return this.link
+      }
     }
   }
 })
