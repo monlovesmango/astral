@@ -1,6 +1,6 @@
 <template>
   <q-btn
-    v-if="lnString"
+    v-if="lnString && this.$store.state.config.preferences.lightningTips.enabled"
     icon="bolt"
     class='button-wallet'
     :class='(!verbose ? "q-pr-xs" : "")'

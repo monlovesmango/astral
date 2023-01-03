@@ -22,7 +22,6 @@ export default defineComponent({
     let qrImg = this.$refs.qr
     let width = qrImg.clientWidth
     qrImg.style.height = `${width}px`
-    console.log('renderqr', qrImg, width)
     this.renderQr()
   },
 

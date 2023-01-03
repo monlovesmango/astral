@@ -34,17 +34,17 @@
           <div v-if='expires'>expires time: {{ timeUTC(expires)}}</div> -->
         </div>
           <div class='flex row no-wrap q-pt-xs' style='gap: .5rem;' :class='rowOrColumn === "row" ? " justify-start" : " justify-center"'>
-            <BaseButtonCopy :button-text='lnString' button-label='copy' outline class='q-pr-xs' @click.stop='mode="copy"'/>
-            <q-btn label='qr' icon='qr_code_2' outline size='sm' dense unelevated class='q-pr-xs' @click.stop='mode="qr"'/>
-            <q-btn label='wallet' icon='wallet' outline size='sm' dense unelevated class='q-pr-xs' @click.stop='mode="wallet"'>
+            <BaseButtonCopy :button-text='lnString' button-label='copy' outline class='q-pr-xs' @click.stop='updateMode("copy")'/>
+            <q-btn label='qr' icon='qr_code_2' outline size='sm' dense unelevated class='q-pr-xs' @click.stop='updateMode("qr")'/>
+            <q-btn label='wallet' icon='wallet' outline size='sm' dense unelevated class='q-pr-xs' @click.stop='updateMode("wallet")'>
               <!-- <q-dialog v-model="showWalletPicker">
                 <BaseWallet :ln-string='lnString' />
               </q-dialog> -->
             </q-btn>
           </div>
       </div>
-      <q-tab-panels v-model="mode" style='background: unset;' :style='rowOrColumn === "row" ? "max-width: 50%; width: 50%" : ""'>
-        <q-tab-panel name="copy" class='no-padding flex items-center justify-end'>
+      <q-tab-panels v-model="mode" style='background: unset;' :style='rowOrColumn === "row" ? "max-width: 50%; width: 50%" : "max-width: 100%; width: 100%"'>
+        <q-tab-panel name="copy" class='no-padding flex items-center' :class='rowOrColumn === "row" ? "justify-end" : "justify-center"'>
           <div class='break-word-wrap' style='font-size: .7rem; overflow-y: auto; max-height: 170px; max-width: 200px'>{{ this.lnString.toLowerCase() }}</div>
         </q-tab-panel>
         <q-tab-panel name="qr" class='no-padding flex items-center justify-center'>
@@ -88,7 +88,7 @@ export default {
       // showQr: false,
       showWalletPicker: false,
       request: {},
-      mode: 'copy',
+      mode: this.$store.state.config.preferences.lightningTips.lastMode,
       // links: [],
     }
   },
@@ -149,6 +149,10 @@ export default {
         // https://sendsats.lol/.well-known/lnurlp/jb55 returned error: Network request failed
   },
   methods: {
+    updateMode(mode) {
+      this.mode = mode
+      this.$store.commit('setConfigLightningTips', { key: 'lastMode', value: mode })
+    }
     // async request() {
     //   if (!this.lnString.startsWith('lnurl')) return null
     //   return await getParams(this.lnurl)

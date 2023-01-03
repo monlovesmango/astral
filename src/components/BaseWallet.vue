@@ -65,7 +65,7 @@
         </div>
         <div style='font-size: 1.1rem;'> sats</div>
       </div>
-      <div v-if='!isInvoice' class='flex row no-wrap justify-center' style='gap: .3rem;'>
+      <div v-if='!isInvoice' class='flex row justify-center' style='gap: .3rem;'>
         <q-btn v-for='(amount, index) in tipPresets' :key='index' :label='amount + " sats"' size='sm' outline @click.stop='tipAmount=amount'/>
         <q-btn label='other' size='sm' outline @click.stop='focusAmount()'/>
 
@@ -126,8 +126,8 @@ export default defineComponent({
       // fibonacciNum: 0,
       loadingInvoice: false,
       // timer: null,
-      tipAmount: 10,
-      tipPresets: [10, 100, 1000],
+      tipAmount: this.$store.state.config.preferences.lightningTips.presets[0],
+      tipPresets: this.$store.state.config.preferences.lightningTips.presets,
       selectedWallet: null,
       wallets: [
         {
@@ -208,6 +208,10 @@ export default defineComponent({
     // },
   },
 
+  mounted() {
+    this.selectedWallet = this.wallets.find(wallet => wallet.name === this.$store.state.config.preferences.lightningTips.lastWallet)
+  },
+
   methods: {
     // openWalletPicker() {
     //   this.showWalletPicker = true
@@ -267,7 +271,8 @@ export default defineComponent({
     async openInWallet() {
       // temporarily disable the "leave page?" prompt when user clicks
       // window.onbeforeunload = null
-      if (!this.selectedWallet) return
+      if (!this.selectedWallet || !this.tipAmount) return
+      this.$store.commit('setConfigLightningTips', { key: 'lastWallet', value: this.selectedWallet.name })
       let prefix = this.selectedWallet.prefix
 
       if (!prefix) {
@@ -275,7 +280,7 @@ export default defineComponent({
       }
 
       this.loadingInvoice = true
-      const invoice = await this.getInvoice(100)
+      const invoice = await this.getInvoice(this.tipAmount)
       window.open(`${prefix}${invoice}`, '_self')
       this.loadingInvoice = false
       // this.closeWalletPicker()

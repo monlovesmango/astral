@@ -114,7 +114,23 @@
           </li>
         </template>
       </BaseSelect>
-
+      <div class="text-bold flex justify-between no-wrap" style='font-size: 1rem;'>
+        {{ $t('lightningTips') }}
+      </div>
+      <q-checkbox v-model='preferences.lightningTips.enabled' :disable="!editingPreferences" left-label label='enabled' color='black' size='sm'/>
+      <div v-if='preferences.lightningTips.enabled' class='flex row no-wrap' style='gap: 2rem;'>
+        <q-input
+          v-for='(preset, index) in preferences.lightningTips.presets'
+          :key='index'
+          v-model='preferences.lightningTips.presets[index]'
+          type='number'
+          :label='"preset " + (index + 1)'
+          :disable="!editingPreferences"
+          dense
+          filled
+          suffix='sats'
+          />
+      </div>
     </div>
     <q-separator color='accent'/>
     <div class='section'>
@@ -275,7 +291,7 @@ import {queryName} from 'nostr-tools/nip05'
 
 import helpersMixin from '../utils/mixin'
 import {dbErase} from '../query'
-import { getCssVar, setCssVar } from 'quasar'
+import { setCssVar } from 'quasar'
 import BaseSelect from 'components/BaseSelect.vue'
 import BaseSelectMultiple from 'components/BaseSelectMultiple.vue'
 import BaseInformation from 'components/BaseInformation.vue'
@@ -515,25 +531,7 @@ export default {
       this.editingMetadata = false
     },
     clonePreferences() {
-      this.preferences = {}
-      let config = LocalStorage.getItem('config') || {}
-      if (config['preferences']) {
-        this.preferences = config.preferences
-        if (!this.preferences.color.background) this.preferences.color.background = getCssVar('background')
-        if (!this.preferences.font) this.preferences.font = 'Roboto'
-      } else {
-        this.preferences = {
-          color: {
-            primary: getCssVar('primary'),
-            secondary: getCssVar('secondary'),
-            accent: getCssVar('accent'),
-            background: getCssVar('background'),
-          },
-          font: 'Roboto'
-        }
-        config.preferences = this.preferences
-        LocalStorage.set('config', config)
-      }
+      this.preferences = JSON.parse(JSON.stringify(this.$store.state.config.preferences))
     },
     addRelay() {
       if (this.newRelay && this.newRelay.length) this.relays[this.newRelay] = { read: true, write: true }
@@ -560,9 +558,10 @@ export default {
     },
     savePreferences() {
       // this.loadFont(this.preferences.font)
-      let config = LocalStorage.getItem('config') || {}
-      config.preferences = this.preferences
-      LocalStorage.set('config', config)
+      // let config = LocalStorage.getItem('config') || {}
+      // config.preferences = this.preferences
+      // LocalStorage.set('config', config)
+      this.$store.commit('setConfig', {key: 'preferences', value: this.preferences})
       this.editingPreferences = false
     },
     updateColor(color, colorName) {
