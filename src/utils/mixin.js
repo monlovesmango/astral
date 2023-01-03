@@ -6,6 +6,7 @@ import { dbStreamEvent } from 'src/query'
 import {decrypt} from 'nostr-tools/nip04'
 import { decode, encode } from 'bech32-buffer'
 import * as DOMPurify from 'dompurify'
+import { utils } from 'lnurl-pay'
 const { formatDate } = date
 
 
@@ -340,7 +341,24 @@ export default {
         buffer[i] = parseInt(str.substr(2 * i, 2), 16)
       }
       return buffer
-    }
+    },
+
+    lnurlToLnAddr(lnurl) {
+      let url = utils.decodeUrlOrAddress(lnurl)
+      console.log('url', url, lnurl)
+      if (!url) return null
+      let lnAddrRegex = /^https:\/\/(?<domain>[a-zA-z0-9.]+)\/.well-known\/lnurlp\/(?<user>[a-zA-Z0-9_-]+)/
+      let lnAddrMatch = url.match(lnAddrRegex)
+      if (lnAddrMatch) return `${lnAddrMatch.groups.user}@${lnAddrMatch.groups.domain}`
+      return null
+    },
+    lnAddrToLnurl(lnAddr) {
+      if (!utils.isLightningAddress(lnAddr)) return null
+      let url = utils.decodeUrlOrAddress(lnAddr)
+      let lnurl = utils.parseLnUrl(url)
+      console.log('lnaddrtolnurl', lnAddr, url, typeof url, lnurl)
+      return null
+    },
   }
 }
 

@@ -128,6 +128,14 @@
               :size='highlighted ? "md" : "sm"'
               @click.stop
             >
+              <q-tab name='tip' class='no-padding'>
+                <BaseButtonLightning
+                  v-if='$store.getters.profileLud06(event.pubkey)'
+                  :ln-string='$store.getters.profileLud06(event.pubkey)'
+                  :pubkey='event.pubkey'
+                  :size='highlighted ? "md" : "sm"'
+                />
+              </q-tab>
               <q-tab name='embed' class='no-padding'>
                 <q-icon name='link' >
                   <q-tooltip>
@@ -155,12 +163,6 @@
                     reply
                   </q-tooltip>
                 </q-icon>
-              </q-tab>
-              <q-tab name='tip' class='no-padding'>
-                <BaseButtonLUD06
-                  :pubkey='event.pubkey'
-                  :size='highlighted ? "md" : "sm"'
-                />
               </q-tab>
             </q-tabs>
             <div class='flex row no-wrap items-center'>
@@ -236,7 +238,7 @@ import BaseButtonInfo from 'components/BaseButtonInfo.vue'
 import BaseButtonCopy from 'components/BaseButtonCopy.vue'
 import BaseMarkdown from 'components/BaseMarkdown.vue'
 import BaseRelayRecommend from 'components/BaseRelayRecommend.vue'
-import BaseButtonLUD06 from 'components/BaseButtonLUD06.vue'
+import BaseButtonLightning from 'components/BaseButtonLightning.vue'
 import * as DOMPurify from 'dompurify'
 
 export default defineComponent({
@@ -256,7 +258,7 @@ export default defineComponent({
     BaseButtonCopy,
     BaseMarkdown,
     BaseRelayRecommend,
-    BaseButtonLUD06,
+    BaseButtonLightning,
   },
 
   data() {

@@ -53,9 +53,20 @@
         filled
         dense
         type="text"
-        label="LUD-06 Identifier"
-        maxlength="100"
+        label="Lightning Address or LUD-06 Identifier"
+        maxlength="150"
       />
+      <q-input
+        v-if="lnurlToLnAddr(metadata.lud06)"
+        disable
+        filled
+        dense
+        type="text"
+        label="Lightning Address"
+        maxlength="150"
+      >
+      {{lnurlToLnAddr(metadata.lud06)}}
+      </q-input>
     </q-form>
 
     <q-separator color='accent'/>
@@ -269,6 +280,7 @@ import BaseSelect from 'components/BaseSelect.vue'
 import BaseSelectMultiple from 'components/BaseSelectMultiple.vue'
 import BaseInformation from 'components/BaseInformation.vue'
 import { createMetaMixin } from 'quasar'
+import { utils } from 'lnurl-pay'
 
 const metaData = {
   // sets document title
@@ -486,18 +498,20 @@ export default {
       }
 
       if (this.metadata.lud06) {
-        if (this.metadata.lud06.toLowerCase().indexOf('lnurl') !== 0) {
+        console.log('lud06', this.metadata)
+        if (utils.isLightningAddress(this.metadata.lud06)) this.metadata.lud06 = this.lnAddrToLnurl(this.metadata.lud06)
+        else if (!utils.isLnurl(this.metadata.lud06)) {
           this.$q.notify({
             message: 'Invalid lud06 identifier, must start with LNURL.',
             color: 'warning'
           })
-
           return
         }
+        console.log('lud06', this.metadata)
       }
 
       if (!Object.keys(this.$store.state.relays).length) this.saveRelays()
-      this.$store.dispatch('setMetadata', this.metadata)
+      // this.$store.dispatch('setMetadata', this.metadata)
       this.editingMetadata = false
     },
     clonePreferences() {

@@ -394,6 +394,7 @@ body {
   display: block;
   height: 100vh;
   overflow: auto;
+  font-family: var(--q-font), "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 #layout-container {
   display: flex;

@@ -1,89 +1,140 @@
 <template>
-    <q-btn
-      v-if="link"
-      icon="bolt"
-      :class='(!extended ? "q-pr-xs button-wallet" : "button-wallet") + (timer !== null ? " active " : "")'
-      clickable
-      @click.stop='openWalletPicker'
-      @touchend.prevent='openWalletPicker'
-      @mouseleave.prevent='timer !== null && openWalletPicker()'
-      :label='(extended) ? ("open in wallet") : ""'
-      align="left"
-      :size='size'
-      unelevated
-      dense
-      :outline="extended"
-      @mousedown.prevent='incrementTip'
-      @touchstart.prevent='incrementTip'
-    >
-      <span v-if="tipAmount > 0">
-        <b>{{tipAmount}}</b>
-      </span>
-    </q-btn>
+  <div ref='walletPicker' class='wallet-picker flex column no-padding justify-center' style='gap: 1rem; height: 100%; width: 100%'>
+    <div class='flex row full-width items-center justify-center'>
+      <div >
+        <BaseSelect :selecting='showWalletPicker' @toggle='showWalletPicker=!showWalletPicker' style='width: 100%;'>
+          <template #default>
+            <div v-if='selectedWallet' class='flex row no-wrap items-center q-pa-xs' style='gap: .5rem; font-size: 1.1rem; width: 100%;'>
+              <div >
+                <q-img
+                  v-if="!loadingInvoice"
+                  :src="'wallet-icons/' + selectedWallet.image"
+                  spinner-color="white"
+                  style="height: 1.5rem; width: 1.5rem; border-radius: .3rem;"
+                />
+                <q-spinner-puff
+                  v-if="loadingInvoice"
+                  color="accent"
+                  size="2em"
+                />
+              </div>
 
-     <q-dialog :model-value="showWalletPicker" @update:model-value="closeWalletPicker" auto-close='false' allow-focus-outside='true'>
-      <q-card>
-        <q-card-section>
-          <div class="text-h6" v-if='tipAmount === 0'>Select a Wallet</div>
-          <div class="text-h6" v-if='tipAmount > 0'>Send {{ tipAmount }} sats</div>
-        </q-card-section>
-
-        <q-separator />
-
-        <q-card-section style="max-height: 50vh" class="scroll">
-          <q-list bordered separator>
-
-            <div v-for="(wallet, key) in wallets" :key='key'>
-              <q-item clickable v-ripple @click='openInWallet(wallet.prefix)'>
-                <q-item-section avatar>
+              <div>{{selectedWallet.name}}</div>
+            </div>
+            <div v-else style='font-size: 1.1rem; width: 100%;'> select a wallet </div>
+          </template>
+          <template #list-items>
+            <q-dialog v-model='showWalletPicker'>
+            <div class='flex column no-wrap q-pa-sm base-select-list' style='max-height: 80%; gap: .5rem; background: var(--q-background); font-size: 1.1rem;'>
+              <li v-for="(wallet, key) in wallets" :key='key' @click='selectWallet(wallet)' class='flex row items-center no-wrap q-pl-xs' style='gap: .5rem;'>
+              <!-- <li v-for="(wallet, key) in wallets" :key='key' @click='openInWallet(wallet.prefix)' class='flex row items-center'> -->
+                <div >
                   <q-img
+                    v-if="!loadingInvoice"
                     :src="'wallet-icons/' + wallet.image"
                     spinner-color="white"
-                    style="height: 50px; width: 50px;"
-                    v-if="!loadingInvoice"
+                    style="height: 1.5rem; width: 1.5rem; border-radius: .3rem;"
                   />
                   <q-spinner-puff
-                    color="primary"
+                    v-if="loadingInvoice"
+                    color="accent"
                     size="2em"
-                    v-if="loadingInvoice" />
-                </q-item-section>
+                  />
+                </div>
 
-                <q-item-section>{{wallet.name}}</q-item-section>
-              </q-item>
+                <div>{{wallet.name}}</div>
+              </li>
             </div>
+            </q-dialog>
+          </template>
 
+        </BaseSelect>
+      </div>
+        <!-- <div style='font-size: 1.1rem;'>wallet</div> -->
+    </div>
+    <!-- <div class='flex column items-center'> -->
+      <div v-if='!isInvoice' class='flex row items-center justify-center' style='gap: .7rem;'>
+        <div
+          id='amount-input'
+          contenteditable
+          style='font-size: 2rem; padding: 0 .4rem; min-width: 2rem; outline: none; border: none;'
+          @input='updateTipAmount'
+          @keypress.enter="openInWallet()"
+        >
+          {{ tipAmount }}
+        </div>
+        <div style='font-size: 1.1rem;'> sats</div>
+      </div>
+      <div v-if='!isInvoice' class='flex row no-wrap justify-center' style='gap: .3rem;'>
+        <q-btn v-for='(amount, index) in tipPresets' :key='index' :label='amount + " sats"' size='sm' outline @click.stop='tipAmount=amount'/>
+        <q-btn label='other' size='sm' outline @click.stop='focusAmount()'/>
 
-          </q-list>
-        </q-card-section>
+      </div>
+    <!-- </div> -->
+    <!-- <q-separator /> -->
 
-        <q-separator />
+    <!-- <q-separator /> -->
 
-        <q-card-actions align="right">
-          <q-btn flat label="Copy Link" color="primary" v-close-popup  @click='copy' />
-          <q-btn flat label="Open in Default Wallet" color="primary" v-close-popup @click='openInWallet()' />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
+    <!-- <div align=""> -->
+      <!-- <q-btn flat label="Copy lnString" color="primary" v-close-popup  @click='copy' /> -->
+      <div class='flex column justify-center items-center' style='font-size: .9rem; width: 100%;'>
+        <span v-if='!selectedWallet'>please select a wallet</span>
+        <span v-else-if='!isInvoice && selectedWallet && tipAmount === 0'>please enter an amount greater than 0</span>
+        <span v-else-if='!isInvoice && selectedWallet && !tipAmount'>please enter an amount</span>
+        <q-btn v-else spread outline class='full-width' label='open wallet' color="primary" v-close-popup @click='openInWallet()' />
+      </div>
+    <!-- </div> -->
+  </div>
 </template>
 
 <script>
 import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
 import {Notify} from 'quasar'
-import { destroyStreams } from '../query'
+// import { destroyStreams } from '../query'
 import { requestInvoice } from 'lnurl-pay'
+import BaseSelect from 'components/BaseSelect.vue'
 
 export default defineComponent({
   name: 'BaseWallet',
   mixins: [helpersMixin],
+  components: {
+    BaseSelect
+  },
+
+  props: {
+    lnString: {
+      type: String,
+      required: true,
+      default: '',
+    },
+    extended: {
+      type: Boolean,
+      requred: false,
+      default: false,
+    },
+    size: {
+      type: String,
+      required: false,
+      default: 'sm',
+    }
+  },
 
   data() {
     return {
       showWalletPicker: false,
-      fibonacciNum: 0,
+      // fibonacciNum: 0,
       loadingInvoice: false,
-      timer: null,
+      // timer: null,
+      tipAmount: 10,
+      tipPresets: [10, 100, 1000],
+      selectedWallet: null,
       wallets: [
+        {
+          name: 'system default',
+          prefix: 'lightning:',
+          image: 'default.png',
+        },
         {
           name: 'Strike',
           prefix: 'strike:',
@@ -130,108 +181,126 @@ export default defineComponent({
           image: 'bbw.jpg',
         },
       ],
-    }
-  },
-
-  props: {
-    link: {
-      type: String,
-      required: true,
-      default: '',
-    },
-    extended: {
-      type: Boolean,
-      requred: false,
-      default: false,
-    },
-    size: {
-      type: String,
-      required: false,
-      default: 'sm',
+      focusAmount() {
+        setTimeout(async () => {
+          await this.$nextTick()
+          // this.textarea.focus()
+          // this.postEntry.querySelector('#input-editable')
+          this.tipAmount = null
+          this.amountInput.focus()
+        }, 1)
+      },
     }
   },
 
   computed: {
-    tipAmount() {
-      return this.binet(this.fibonacciNum)
+    amountInput() {
+      return this.$refs.walletPicker.querySelector('#amount-input')
     },
+    isInvoice() {
+      return this.lnString.startsWith('lnbc')
+    }
+    // selectHeight() {
+    //   return this.$refs.walletPicker.$el.querySelector('#amount-input')
+    // }
+    // tipAmount() {
+    //   return this.binet(this.fibonacciNum)
+    // },
   },
 
   methods: {
-    openWalletPicker() {
-      this.showWalletPicker = true
-      this.cancelTimer()
-    },
+    // openWalletPicker() {
+    //   this.showWalletPicker = true
+    //   this.cancelTimer()
+    // },
 
-    closeWalletPicker() {
+    // closeWalletPicker() {
+    //   this.showWalletPicker = false
+    //   this.fibonacciNum = 0
+    //   this.loadingInvoice = false
+    //   this.cancelTimer()
+    // },
+
+    // copy() {
+    //   let text = this.lnString
+    //   navigator.clipboard.writeText(text)
+    //   Notify.create({
+    //     message: `copied ${this.lnString.length < 70 ? this.lnString : this.shorten(this.lnString, 30)}`,
+    //   })
+    // },
+
+    // incrementTip() {
+    //   this.timer = setTimeout(() => {
+    //     this.fibonacciNum++
+    //     this.incrementTip()
+    //   }, 325)
+    // },
+
+    // binet(n) {
+    //   return Math.round((Math.pow((1 + Math.sqrt(5)) / 2, n) - Math.pow((1 - Math.sqrt(5)) / 2, n)) / Math.sqrt(5))
+    // },
+
+    // cancelTimer() {
+    //   if (this.timer) {
+    //     clearTimeout(this.timer)
+    //     this.timer = null
+    //   }
+    // },
+    selectWallet(wallet) {
+      this.selectedWallet = wallet
       this.showWalletPicker = false
-      this.fibonacciNum = 0
-      this.loadingInvoice = false
-      this.cancelTimer()
     },
 
-    copy() {
-      let text = this.link
-      navigator.clipboard.writeText(text)
-      Notify.create({
-        message: `copied ${this.link.length < 70 ? this.link : this.shorten(this.link, 30)}`,
-      })
-    },
-
-    incrementTip() {
-      this.timer = setTimeout(() => {
-        this.fibonacciNum++
-        this.incrementTip()
-      }, 325)
-    },
-
-    binet(n) {
-      return Math.round((Math.pow((1 + Math.sqrt(5)) / 2, n) - Math.pow((1 - Math.sqrt(5)) / 2, n)) / Math.sqrt(5))
-    },
-
-    cancelTimer() {
-      if (this.timer) {
-        clearTimeout(this.timer)
-        this.timer = null
+    updateTipAmount(e) {
+      let amount = e.target.innerText
+      let amountRegex = /^[0-9]+$/
+      let amountMatch = amount.match(amountRegex)
+      if (!amountMatch) {
+        this.tipAmount = null
+        return
       }
+      let parsed = parseInt(amount)
+      this.tipAmount = parsed
+      console.log('amount', amount, e, parsed)
     },
 
-    async openInWallet(prefix) {
+    async openInWallet() {
       // temporarily disable the "leave page?" prompt when user clicks
-      window.onbeforeunload = null
+      // window.onbeforeunload = null
+      if (!this.selectedWallet) return
+      let prefix = this.selectedWallet.prefix
 
       if (!prefix) {
         prefix = 'lightning:'
       }
 
       this.loadingInvoice = true
-      const invoice = await this.getInvoice(this.binet(this.fibonacciNum))
-
+      const invoice = await this.getInvoice(100)
       window.open(`${prefix}${invoice}`, '_self')
+      this.loadingInvoice = false
+      // this.closeWalletPicker()
 
-      this.closeWalletPicker()
-
-      // once we have our own link done, re-instate the "leave page?" prompt
-      setTimeout(() => {
-        // destroy streams before unloading window
-        window.onbeforeunload = async () => {
-          await destroyStreams()
-        }
-      }, 500)
+      // // once we have our own link done, re-instate the "leave page?" prompt
+      // setTimeout(() => {
+      //   // destroy streams before unloading window
+      //   window.onbeforeunload = async () => {
+      //     await destroyStreams()
+      //   }
+      // }, 500)
     },
 
     async getInvoice(amount) {
-      if (this.link.toLowerCase().indexOf('lnbc') === 0) {
-        return this.link
+      if (this.lnString.toLowerCase().indexOf('lnbc') === 0) {
+        return this.lnString
       }
 
       if (!amount) {
-        return this.link
+        return this.lnString
       }
 
       try {
         const { invoice } = await requestInvoice({
-          lnUrlOrAddress: this.link,
+          lnUrlOrAddress: this.lnString,
           tokens: amount, // satoshis
           fetchGet: (req) => {
             // TODO :: need to talk about this...workaround
@@ -241,6 +310,7 @@ export default defineComponent({
               url += '?'
               url += new URLSearchParams(req.params)
             }
+            console.log('request invoice', req, url)
 
             return fetch(url)
               .then((res) => res.json())
@@ -248,7 +318,7 @@ export default defineComponent({
                 Notify.create({
                   message: 'Error fetching invoice from LNURL. ' + err.toString()
                 })
-                this.closeWalletPicker()
+                // this.closeWalletPicker()
               })
           }
         })
@@ -259,15 +329,14 @@ export default defineComponent({
           message: 'Error fetching invoice from LNURL. ' + e.toString()
         })
 
-        return this.link
+        return this.lnString
       }
     }
   }
 })
 </script>
 
-<style>
-.button-wallet {
+<!-- .button-wallet {
   opacity: .7;
   transition: all .3s ease-in-out;
 }
@@ -284,5 +353,16 @@ export default defineComponent({
   100% {
     transform: scale(1.8);
   }
+} -->
+<!-- .wallet-picker {
+  background: var(--q-background);
+} -->
+<!--
+.q-tab-panels{
+  background: rgba(0, 0, 0, 0.015);
 }
+.body--dark .q-tab-panels {
+  background: rgba(255, 255, 255, 0.035);
+} -->
+<style lang='css' scoped>
 </style>
