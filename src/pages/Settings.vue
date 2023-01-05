@@ -487,6 +487,7 @@ export default {
     convertLud06() {
       if (utils.isLightningAddress(this.metadata.lud06)) this.metadata.lud06 = this.lnAddrToLnurl(this.metadata.lud06)
       else if (utils.isLnurl(this.metadata.lud06) && this.lnurlToLnAddr(this.metadata.lud06)) this.metadata.lud06 = this.lnurlToLnAddr(this.metadata.lud06)
+      this.showLnAddr = !this.showLnAddr
     },
     cloneRelays() {
       // this.relays = JSON.parse(JSON.stringify(this.$store.state.relays))
