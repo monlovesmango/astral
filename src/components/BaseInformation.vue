@@ -24,7 +24,7 @@
         </ul>
         <p>
         astral is a client for Nostr. while astral is implementing a social media usecase of Nostr, the possibilities of Nostr are endless.
-        <a href='https://jesterui.github.io/#/game/jester1y7du0yq7uzfzhxr2xgd64lmchfpf54evjsa59ff4f2mgh83h79rs9k7ffq'>Jester</a>
+        <a href='https://jesterui.github.io/#/game/jester1y7du0yq7uzfzhxr2xgd64lmchfpf54evjsa59ff4f2mgh83h79rs9k7ffq' target='_blank' rel='noopener noreferrer'>Jester</a>
         is a beta peer to peer chess client implemented over Nostr.
         </p>
       </q-card-section>
@@ -223,7 +223,7 @@
           instructions in the applicable sub-section below but enter your private key instead of hitting
           'generate' (with nos2x make sure to hit save afterword). <strong>if your existing private key begins with
           'nsec' you will need to convert it to hex format</strong> before saving it in the browser extensions, which
-          can be done <a href='https://damus.io/key/'>here</a>.**
+          can be done <a href='https://damus.io/key/' target='_blank' rel='noopener noreferrer'>here</a>.**
         </p>
         <p>
           choose your key generation method:
