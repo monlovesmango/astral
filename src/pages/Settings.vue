@@ -445,6 +445,8 @@ export default {
     this.unsubscribe = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'addProfileToCache': {
+          if (mutation.payload.pubkey !== state.keys.pub) return
+
           nextTick(() => {
             setTimeout(() => {
               this.cloneMetadata()
@@ -551,10 +553,6 @@ export default {
       this.editingRelays = false
     },
     savePreferences() {
-      // this.loadFont(this.preferences.font)
-      // let config = LocalStorage.getItem('config') || {}
-      // config.preferences = this.preferences
-      // LocalStorage.set('config', config)
       this.$store.commit('setConfig', {key: 'preferences', value: this.preferences})
       this.editingPreferences = false
     },
