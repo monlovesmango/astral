@@ -47,26 +47,19 @@
         label="NIP-05 Identifier"
         maxlength="100"
       />
-      <q-input
-        v-model.trim="metadata.lud06"
-        :disable='!editingMetadata'
-        filled
-        dense
-        type="text"
-        label="Lightning Address or LUD-06 Identifier"
-        maxlength="150"
-      />
-      <q-input
-        v-if="lnurlToLnAddr(metadata.lud06)"
-        disable
-        filled
-        dense
-        type="text"
-        label="Lightning Address"
-        maxlength="150"
-      >
-      {{lnurlToLnAddr(metadata.lud06)}}
-      </q-input>
+      <div class='flex row no-wrap' style='gap: 1rem;'>
+        <q-input
+          v-model.trim="metadata.lud06"
+          :disable='!editingMetadata'
+          filled
+          dense
+          type="text"
+          label="Lightning Address or LUD-06 Identifier"
+          maxlength="150"
+          class='full-width'
+        />
+        <q-btn v-if='hasLnAddr' :label='showLnAddr ? "show lnurl" : "show ln address"' @click='convertLud06' outline dense no-wrap/>
+      </div>
     </q-form>
 
     <q-separator color='accent'/>
@@ -321,19 +314,11 @@ export default {
   },
 
   data() {
-    const {name, picture, about, nip05, lud06} =
-      this.$store.state.profilesCache[this.$store.state.keys.pub] || {}
-
     return {
       keysDialog: false,
       editingMetadata: false,
-      metadata: {
-        name,
-        picture,
-        about,
-        nip05,
-        lud06
-      },
+      metadata: {},
+      showLnAddr: true,
       relays: {},
       editingRelays: false,
       editingPreferences: false,
@@ -439,6 +424,12 @@ export default {
       if (this.$store.state.keys.priv) return this.hexToBech32(this.$store.state.keys.priv, 'nsec')
       return null
     },
+    hasLnAddr() {
+      return utils.isLightningAddress(this.metadata.lud06) || (utils.isLnurl(this.metadata.lud06) && this.lnurlToLnAddr(this.metadata.lud06))
+    },
+    isLnurl() {
+      return utils.isLnurl(this.metadata.lud06)
+    }
   },
 
   mounted() {
@@ -454,17 +445,9 @@ export default {
     this.unsubscribe = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'addProfileToCache': {
-          const {name, picture, about, nip05, lud06} =
-            state.profilesCache[state.keys.pub] || {}
-
           nextTick(() => {
             setTimeout(() => {
-              if (!this.metadata.name && name) this.metadata.name = name
-              if (!this.metadata.picture && picture)
-                this.metadata.picture = picture
-              if (!this.metadata.about && about) this.metadata.about = about
-              if (!this.metadata.nip05 && nip05) this.metadata.nip05 = nip05
-              if (!this.metadata.lud06 && lud06) this.metadata.lud06 = lud06
+              this.cloneMetadata()
             }, 1)
           })
 
@@ -492,6 +475,16 @@ export default {
     cloneMetadata() {
       this.metadata = Object.assign({}, this.$store.state.profilesCache[this.$store.state.keys.pub])
       // this.metadata = {name, picture, about, nip05}
+      if (this.metadata.lud06) {
+        let lnAddr = this.lnurlToLnAddr(this.metadata.lud06)
+        if (lnAddr) this.metadata.lud06 = lnAddr
+      } else if (this.metadata.lud16) {
+        this.metadata.lud06 = this.metadata.lud16
+      }
+    },
+    convertLud06() {
+      if (utils.isLightningAddress(this.metadata.lud06)) this.metadata.lud06 = this.lnAddrToLnurl(this.metadata.lud06)
+      else if (utils.isLnurl(this.metadata.lud06) && this.lnurlToLnAddr(this.metadata.lud06)) this.metadata.lud06 = this.lnurlToLnAddr(this.metadata.lud06)
     },
     cloneRelays() {
       // this.relays = JSON.parse(JSON.stringify(this.$store.state.relays))
@@ -514,20 +507,21 @@ export default {
       }
 
       if (this.metadata.lud06) {
-        console.log('lud06', this.metadata)
-        if (utils.isLightningAddress(this.metadata.lud06)) this.metadata.lud06 = this.lnAddrToLnurl(this.metadata.lud06)
-        else if (!utils.isLnurl(this.metadata.lud06)) {
+        if (utils.isLightningAddress(this.metadata.lud06)) {
+          this.metadata.lud16 = this.metadata.lud06
+          this.metadata.lud06 = this.lnAddrToLnurl(this.metadata.lud16)
+        }
+        if (!utils.isLnurl(this.metadata.lud06)) {
           this.$q.notify({
             message: 'Invalid lud06 identifier, must start with LNURL.',
             color: 'warning'
           })
           return
         }
-        console.log('lud06', this.metadata)
       }
 
       if (!Object.keys(this.$store.state.relays).length) this.saveRelays()
-      // this.$store.dispatch('setMetadata', this.metadata)
+      this.$store.dispatch('setMetadata', this.metadata)
       this.editingMetadata = false
     },
     clonePreferences() {

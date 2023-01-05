@@ -26,7 +26,6 @@
     />
     <BaseButtonLightning
       v-if='(pubkey !== $store.state.keys.pub) && ($store.getters.profileLud06(pubkey))'
-      :ln-string='$store.getters.profileLud06(pubkey)'
       :pubkey='pubkey'
     />
   </div>

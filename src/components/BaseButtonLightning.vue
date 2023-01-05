@@ -1,11 +1,11 @@
 <template>
   <q-btn
-    v-if="lnString && this.$store.state.config.preferences.lightningTips.enabled"
+    v-if="$store.getters.profileLud06(pubkey) && this.$store.state.config.preferences.lightningTips.enabled"
     icon="bolt"
     class='button-wallet'
     :class='(!verbose ? "q-pr-xs" : "")'
     clickable
-    @click.stop='toggleWalletPicker'
+    @click.stop='toggleLightningCard'
     :label='verbose ? ("open in wallet") : ""'
     align="left"
     :size='size'
@@ -13,16 +13,16 @@
     dense
   >
     <q-tooltip v-if="!verbose">
-      tip with bitocin lightning network
+      tip with bitcoin lightning network
     </q-tooltip>
-    <q-dialog v-model="showWalletPicker">
-      <BaseLightningCard :ln-string='lnString' :pubkey='pubkey' style='padding: 1.5rem;'/>
+    <q-dialog v-model="showLightningCard">
+      <BaseLightningCard :ln-string='$store.getters.profileLud06(pubkey)' :pubkey='pubkey' style='padding: 1.5rem;'/>
     </q-dialog>
   </q-btn>
 </template>
 
 <script>
-import { defineComponent, nextTick } from 'vue'
+import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
 import BaseLightningCard from 'components/BaseLightningCard.vue'
 
@@ -34,20 +34,13 @@ export default defineComponent({
   },
 
   data() {
-    // const {lud06} = this.$store.state.profilesCache[this.pubkey] || {}
-
     return {
-      // lud06: lud06,
-      showWalletPicker: false,
+      showLightningCard: false,
     }
   },
 
   props: {
-    lnString: {
-      type: String,
-      default: null,
-    },
-    pubkey: {type: String, default: null},
+    pubkey: {type: String, required: true},
     size: {
       type: String,
       required: false,
@@ -59,32 +52,9 @@ export default defineComponent({
     }
   },
 
-  mounted() {
-    if (!this.lud06) {
-      this.unsubscribe = this.$store.subscribe((mutation, state) => {
-        switch (mutation.type) {
-          case 'addProfileToCache': {
-            const {lud06} = state.profilesCache[this.pubkey] || {}
-            nextTick(() => {
-              setTimeout(() => {
-                if (!this.lud06 && lud06) this.lud06 = lud06
-              }, 1)
-            })
-
-            break
-          }
-        }
-      })
-    }
-  },
-
-  beforeUnmount() {
-    if (this.unsubscribe) this.unsubscribe()
-  },
-
   methods: {
-    toggleWalletPicker() {
-      this.showWalletPicker = !this.showWalletPicker
+    toggleLightningCard() {
+      this.showLightningCard = !this.showLightningCard
     },
   }
 })

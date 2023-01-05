@@ -61,9 +61,10 @@ export function profileDescription(state) {
 
 export function profileLud06(state) {
   return pubkey => {
-    let {lud06} = state.profilesCache[pubkey] || {}
-    if (!lud06) return null
+    let {lud06, lud16} = state.profilesCache[pubkey] || {}
+    if (!lud06 && !lud16) return null
     if (utils.isLnurl(lud06)) return lud06.toLowerCase()
+    if (utils.isLightningAddress(lud16)) return helpersMixin.default.methods.lnAddrToLnurl(lud16)
     // if (utils.isLightningAddress(lud06)) return utils.parseLnUrl(utils.decodeUrlOrAddress(lud06))
     return null
   }

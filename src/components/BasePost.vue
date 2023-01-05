@@ -131,7 +131,6 @@
               <q-tab name='tip' class='no-padding'>
                 <BaseButtonLightning
                   v-if='$store.getters.profileLud06(event.pubkey)'
-                  :ln-string='$store.getters.profileLud06(event.pubkey)'
                   :pubkey='event.pubkey'
                   :size='highlighted ? "md" : "sm"'
                 />

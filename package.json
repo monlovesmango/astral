@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@quasar/extras": "^1.0.0",
-    "bech32-buffer": "^0.2.0",
+    "bech32": "^2.0.0",
     "codemirror": "5",
     "core-js": "^3.6.5",
     "cross-fetch": "^3.1.5",
