@@ -109,6 +109,7 @@
             {value: 'emoji', slot: 'emoji'},
             {value: 'link', slot: 'link'},
             {value: 'help', slot: 'help'},
+            {value: 'relays', slot: 'relays'},
             ]"
         >
           <template #emoji>
@@ -157,6 +158,21 @@
               </q-tooltip>
             </q-btn>
           </template>
+          <template #relays>
+            <q-btn
+              unelevated
+              class='no-padding button-link'
+              dense
+              size='sm'
+              @click.stop='toggleTool("relay")'
+            >
+              <q-icon name='cell_tower' size='xs'/>
+              <!-- </q-icon> -->
+              <q-tooltip>
+                select which relay(s) to publish to
+              </q-tooltip>
+            </q-btn>
+          </template>
           <!-- <template #image>
             <q-btn
               unelevated
@@ -201,6 +217,12 @@
                 <span class='text-bold'>{{ "to mention a post: "}}</span>
                 <span>paste in note id (you can copy note id from embed <q-icon name='link' size='sm'/> button at the bottom of every post)"</span>
                 <!-- <code>{{`"&<event-id>"`}}</code> -->
+              </div>
+            </q-tab-panel>
+            <q-tab-panel name="relay" class='q-pa-xs' @click.stop>
+              <span>choose relay group(s)</span>
+              <div v-for='group in $store.getters.relayGroups' :key='group'>
+                <q-toggle :label='group' v-model='selectedRelayGroups' :val='group' />
               </div>
             </q-tab-panel>
           </q-tab-panels>
@@ -342,6 +364,7 @@ export default {
 
   data() {
     return {
+      selectedRelayGroups: [],
       text: '',
       charLimit: 280,
       sending: false,
@@ -524,7 +547,12 @@ export default {
       text = this.appendLinks(text)
 
       // console.log('sendPost:', tags, this.tags, text)
-      let event = await this.$store.dispatch('sendPost', {message: text, tags})
+      const selectedRelays = Object.entries(this.$store.state.relays)
+        .filter(([_, prefs]) => prefs.write)
+        .filter(([_, prefs]) => prefs.groups.some(item => this.selectedRelayGroups.includes(item)))
+        .map(([url, _]) => url)
+
+      let event = await this.$store.dispatch('sendPost', {message: text, tags, relays: selectedRelays})
       if (event) {
         return event
       }
@@ -830,6 +858,7 @@ export default {
       this.readonlyHighlightTextarea.innerHTML = ''
       this.tags = []
       this.links = []
+      this.selectedRelayGroups = []
       this.focusInput()
     },
 

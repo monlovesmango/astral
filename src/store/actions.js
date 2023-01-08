@@ -156,7 +156,7 @@ export async function addEvent(store, {event, relay = null}) {
   await dbSave(event, relay)
 }
 
-export async function sendPost(store, {message, tags = [], kind = 1}) {
+export async function sendPost(store, {message, tags = [], kind = 1, relays = []}) {
   if (message.length === 0) return
 
   try {
@@ -170,7 +170,7 @@ export async function sendPost(store, {message, tags = [], kind = 1}) {
 
 
     let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
+    let publishResult = await publish(event, relays)
     if (!publishResult) throw new Error('could not publish post')
     store.dispatch('addEvent', {event})
     return event

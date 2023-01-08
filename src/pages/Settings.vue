@@ -74,6 +74,7 @@
         {{ $t('relays') }}
         <div class="text-normal flex row no-wrap" style='font-size: .9rem; gap: .4rem;'>
           <q-btn v-if='!editingRelays' label="edit" color="primary" outline size="sm" :disable="!$store.getters.canSignEventsAutomatically" @click='editingRelays = true'/>
+          <div v-if='editingRelays'>groups</div>
           <div v-if='editingRelays'>read</div>
           <div v-if='editingRelays'>write</div>
         </div>
@@ -109,6 +110,20 @@
               {{ url }}
           </div>
           <div class="flex no-wrap items-center" style='gap: .6rem;'>
+              <q-select
+                v-if='editingRelays'
+                v-model='relays[url].groups'
+                :options='relayGroupOptions'
+                filled
+                use-input
+                use-chips
+                multiple
+                hide-dropdown-icon
+                input-debounce='50'
+                new-value-mode='add-unique'
+                @new-value="createValue"
+                @filter="filterFn"
+              />
               <q-toggle
                 v-if='editingRelays'
                 v-model='relays[url].read'
@@ -143,7 +158,7 @@
                 v-for='(relay, index) in optionalRelays'
                 :key='index + "-" + relay'
                 class='relay-item'
-                @click.stop='relays[relay]={read: true, write: true}'
+                @click.stop='relays[relay]={read: true, write: true, groups: []}'
               >
                 <div class='flex row justify-between no-wrap'>
                   <span style='overflow: auto;'>{{relay}}</span>
@@ -261,6 +276,7 @@ export default {
       metadata: {},
       showLnAddr: true,
       relays: {},
+      relayGroupOptions: [],
       editingRelays: false,
       // editingPreferences: false,
       choosingFont: false,
@@ -350,6 +366,42 @@ export default {
   },
 
   methods: {
+    createValue (val, done) {
+      // Calling done(var) when new-value-mode is not set or "add", or done(var, "add") adds "var" content to the model
+      // and it resets the input textbox to empty string
+      // ----
+      // Calling done(var) when new-value-mode is "add-unique", or done(var, "add-unique") adds "var" content to the model
+      // only if is not already set
+      // and it resets the input textbox to empty string
+      // ----
+      // Calling done(var) when new-value-mode is "toggle", or done(var, "toggle") toggles the model with "var" content
+      // (adds to model if not already in the model, removes from model if already has it)
+      // and it resets the input textbox to empty string
+      // ----
+      // If "var" content is undefined/null, then it doesn't tampers with the model
+      // and only resets the input textbox to empty string
+
+      if (val.length > 0) {
+        if (!this.relayGroupOptions.includes(val)) {
+          this.relayGroupOptions.push(val)
+        }
+        done(val, 'toggle')
+      }
+    },
+
+    filterFn (val, update) {
+      update(() => {
+        if (val === '') {
+          this.relayGroupOptions = this.$store.getters.relayGroups
+        } else {
+          const needle = val.toLowerCase()
+          this.relayGroupOptions = this.$store.getters.relayGroups.filter(
+            v => v.toLowerCase().indexOf(needle) > -1
+          )
+        }
+      })
+    },
+
     cloneMetadata() {
       this.metadata = Object.assign({}, this.$store.state.profilesCache[this.$store.state.keys.pub])
       // this.metadata = {name, picture, about, nip05}
@@ -369,6 +421,8 @@ export default {
       // this.relays = JSON.parse(JSON.stringify(this.$store.state.relays))
       this.relays = Object.assign({},
         Object.keys(this.$store.state.relays).length ? this.$store.state.relays : this.$store.state.defaultRelays)
+
+      this.relayGroupOptions = [...this.$store.getters.relayGroups]
     },
     async setMetadata() {
       if (this.metadata.created_at) delete this.metadata.created_at
@@ -415,7 +469,7 @@ export default {
       this.editingMetadata = false
     },
     addRelay() {
-      if (this.newRelay && this.newRelay.length) this.relays[this.newRelay] = { read: true, write: true }
+      if (this.newRelay && this.newRelay.length) this.relays[this.newRelay] = { read: true, write: true, groups: [] }
       this.newRelay = ''
     },
     removeRelay(url) {

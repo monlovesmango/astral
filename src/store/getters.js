@@ -2,6 +2,13 @@ import Identicon from 'identicon.js'
 import * as helpersMixin from '../utils/mixin'
 import { utils } from 'lnurl-pay'
 
+export function relayGroups(state) {
+  return Object.entries(state.relays)
+    .map(([_, prefs]) => prefs.groups)
+    .flat()
+    .filter((v, i, a) => a.indexOf(v) === i)
+}
+
 export function namedProfiles(state, getters) {
   return Object.entries(state.profilesCache).reduce(
     (result, [pubkey, profile]) =>
