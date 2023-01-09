@@ -257,7 +257,7 @@ export function setPrivateKey(privkey) {
 }
 
 export function publish(event, relayURLs) {
-  if (!relayURLs) {
+  if (!relayURLs || !relayURLs.length) {
     return call('publish', [JSON.parse(JSON.stringify(event))])
   }
 
