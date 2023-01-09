@@ -42,7 +42,8 @@ export function addRelay(state, url) {
 
   state.relays[url] = {
     read: true,
-    write: true
+    write: true,
+    groups: []
   }
 }
 

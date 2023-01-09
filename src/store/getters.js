@@ -2,6 +2,22 @@ import Identicon from 'identicon.js'
 import * as helpersMixin from '../utils/mixin'
 import { utils } from 'lnurl-pay'
 
+export function relayGroups(state) {
+  return Object.entries(state.relays)
+    .map(([_, prefs]) => prefs.groups)
+    .flat()
+    .filter((v, i, a) => a.indexOf(v) === i)
+}
+
+export function selectedRelays(state) {
+  return (selectedRelayGroups, type) => {
+    return Object.entries(state.relays)
+      .filter(([_, prefs]) => prefs[type])
+      .filter(([_, prefs]) => prefs.groups.some(item => selectedRelayGroups.includes(item)))
+      .map(([url, _]) => url)
+  }
+}
+
 export function namedProfiles(state, getters) {
   return Object.entries(state.profilesCache).reduce(
     (result, [pubkey, profile]) =>

@@ -3,15 +3,15 @@ import {LocalStorage} from 'quasar'
 const isClientUsingTor = () => window.location.hostname.endsWith('.onion')
 
 const mainnetDefaultRelays = {
-    'wss://nostr-pub.wellorder.net': {read: true, write: true},
-    'wss://nostr.onsats.org': {read: true, write: true},
-    'wss://nostr-relay.wlvs.space': {read: true, write: true},
-    'wss://nostr.bitcoiner.social': {read: true, write: true},
-    'wss://relay.damus.io': {read: true, write: true},
-    'wss://nostr.zebedee.cloud': {read: true, write: false},
-    'wss://relay.nostr.info': {read: true, write: false},
-    'wss://nostr-pub.semisol.dev': {read: true, write: false},
-    'wss://nostr.walletofsatoshi.com': {read: true, write: false},
+    'wss://nostr-pub.wellorder.net': {read: true, write: true, groups: []},
+    'wss://nostr.onsats.org': {read: true, write: true, groups: []},
+    'wss://nostr-relay.wlvs.space': {read: true, write: true, groups: []},
+    'wss://nostr.bitcoiner.social': {read: true, write: true, groups: []},
+    'wss://relay.damus.io': {read: true, write: true, groups: []},
+    'wss://nostr.zebedee.cloud': {read: true, write: false, groups: []},
+    'wss://relay.nostr.info': {read: true, write: false, groups: []},
+    'wss://nostr-pub.semisol.dev': {read: true, write: false, groups: []},
+    'wss://nostr.walletofsatoshi.com': {read: true, write: false, groups: []},
   }
   // const default = [
   //   ['wss://nostr.rocks', {read: true, write: true}],
@@ -72,11 +72,13 @@ const mainnetDefaultRelays = {
 const torDefaultRelays = {
   'ws://jgqaglhautb4k6e6i2g34jakxiemqp6z4wynlirltuukgkft2xuglmqd.onion': {
     read: true,
-    write: true
+    write: true,
+    groups: []
   },
   'ws://wagvwfrdrikrqzp7h3b5lwl6btyuttu7mqpeji35ljzq36ovzgjhsfqd.onion': {
     read: true,
-    write: true
+    write: true,
+    groups: []
   }
 }
 

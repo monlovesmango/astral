@@ -319,7 +319,7 @@ export default defineComponent({
     },
 
     addNewRelay() {
-      if (this.newRelay && this.newRelay.length) this.selectedRelays[this.newRelay] = {read: true, write: false}
+      if (this.newRelay && this.newRelay.length) this.selectedRelays[this.newRelay] = {read: true, write: false, groups: []}
       this.newRelay = ''
     }
   },

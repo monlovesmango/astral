@@ -23,7 +23,7 @@ export default function (store) {
     switch (type) {
       case 'addRelay':{
         let relays = Object.assign({}, store.state.relays)
-        relays[payload] = {read: true, write: true}
+        relays[payload] = {read: true, write: true, groups: []}
         setRelays(relays)
         break
       }

@@ -256,8 +256,18 @@ export function setPrivateKey(privkey) {
   return call('setPrivateKey', [privkey])
 }
 
-export function publish(event, relayURL) {
-  return call('publish', [JSON.parse(JSON.stringify(event)), relayURL])
+export function publish(event, relayURLs) {
+  if (!relayURLs || !relayURLs.length) {
+    return call('publish', [JSON.parse(JSON.stringify(event))])
+  }
+
+  if (typeof relayURLs === 'string') {
+    relayURLs = [relayURLs]
+  }
+
+  const promises = relayURLs.map((relayURL) => call('publish', [JSON.parse(JSON.stringify(event)), relayURL]))
+
+  return Promise.all(promises)
 }
 
 export function activateSub() {
