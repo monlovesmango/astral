@@ -9,6 +9,15 @@ export function relayGroups(state) {
     .filter((v, i, a) => a.indexOf(v) === i)
 }
 
+export function selectedRelays(state) {
+  return (selectedRelayGroups, type) => {
+    return Object.entries(state.relays)
+      .filter(([_, prefs]) => prefs[type])
+      .filter(([_, prefs]) => prefs.groups.some(item => selectedRelayGroups.includes(item)))
+      .map(([url, _]) => url)
+  }
+}
+
 export function namedProfiles(state, getters) {
   return Object.entries(state.profilesCache).reduce(
     (result, [pubkey, profile]) =>

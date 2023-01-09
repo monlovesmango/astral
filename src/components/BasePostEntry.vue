@@ -547,10 +547,7 @@ export default {
       text = this.appendLinks(text)
 
       // console.log('sendPost:', tags, this.tags, text)
-      const selectedRelays = Object.entries(this.$store.state.relays)
-        .filter(([_, prefs]) => prefs.write)
-        .filter(([_, prefs]) => prefs.groups.some(item => this.selectedRelayGroups.includes(item)))
-        .map(([url, _]) => url)
+      const selectedRelays = this.$store.getters.selectedRelays(this.selectedRelayGroups, 'write')
 
       let event = await this.$store.dispatch('sendPost', {message: text, tags, relays: selectedRelays})
       if (event) {

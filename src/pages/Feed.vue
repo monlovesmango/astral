@@ -17,6 +17,14 @@
         <q-tab name="global" label='global' />
         <q-tab name="AI" label='AI' />
         <q-tab name="bots" label='bots' />
+
+        <q-btn-dropdown label="Relay Group(s)">
+          <q-list>
+            <q-item v-for='group in $store.getters.relayGroups' :key='group' clickable>
+              <q-toggle :label='group' v-model='selectedRelayGroups' :val='group' />
+            </q-item>
+          </q-list>
+        </q-btn-dropdown>
       </q-tabs>
     </div>
     <div v-if='tab === "AI"' class='flex row no-wrap items-center' style='border: 1px solid var(--q-accent); border-radius: .5rem; padding: .5rem; margin: .5rem; gap: .5rem;'>
@@ -115,6 +123,7 @@ export default defineComponent({
         bots: []
       },
       feedSet: new Set(),
+      selectedRelayGroups: [],
       bots: [],
       follows: [],
       botTracker: '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952',
@@ -133,7 +142,21 @@ export default defineComponent({
 
   computed: {
     items() {
-      return this.feed[this.tab].slice(0, this.feedCounts[this.tab])
+      const selectedRelays = this.$store.getters.selectedRelays(this.selectedRelayGroups, 'read')
+
+      if (!selectedRelays.length) {
+        return this.feed[this.tab].slice(0, this.feedCounts[this.tab])
+      }
+
+      return this.feed[this.tab]
+        .filter((event) => {
+          if (!event || !event[0] || !event[0].seen_on) {
+            return false
+          }
+
+          return event[0].seen_on.some(item => selectedRelays.includes(item))
+        })
+        .slice(0, this.feedCounts[this.tab])
     }
   },
 
