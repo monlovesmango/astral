@@ -9,7 +9,7 @@ const mainnetDefaultRelays = {
     'wss://nostr.bitcoiner.social': {read: true, write: true},
     'wss://relay.damus.io': {read: true, write: true},
     'wss://nostr.zebedee.cloud': {read: true, write: false},
-    'wss://relay.nostr.info': {read: true, write: false},
+    'wss://relay.nostr.info': {read: true, write: true},
     'wss://nostr-pub.semisol.dev': {read: true, write: false},
     'wss://nostr.walletofsatoshi.com': {read: true, write: false},
   }
