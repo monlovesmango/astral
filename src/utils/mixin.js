@@ -53,8 +53,12 @@ export default {
       return console.log(o)
     },
 
+    getProfile(pubkey) {
+      return this.hexToBech32(pubkey, 'npub')
+    },
+
     toProfile(pubkey) {
-      this.$router.push('/' + this.hexToBech32(pubkey, 'npub'))
+      this.$router.push('/' + this.getProfile(pubkey))
     },
 
     toEvent(id) {
