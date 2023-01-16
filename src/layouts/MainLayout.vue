@@ -458,6 +458,10 @@ body,
 }
 #post-entry {
   border-top: 1px solid var(--q-accent);
+  position: sticky;
+  bottom: 0;
+  background-color: var(--q-background);
+  z-index: 2;
 }
 #post-entry .post-entry-form {
   border: 2px solid var(--q-primary);
