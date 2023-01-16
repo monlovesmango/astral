@@ -80,7 +80,7 @@
             style='font-size: .9rem;'
           >
             <span >in reply to&nbsp;</span>
-            <a @click.stop="toEvent(tagged)">
+            <a :href=getProfile(event.pubkey) @click.stop="toEvent(tagged)">
               {{ shorten(hexToBech32(tagged, 'note')) }}
             </a>
           </q-item-label>
