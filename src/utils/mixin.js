@@ -57,12 +57,16 @@ export default {
       return this.hexToBech32(pubkey, 'npub')
     },
 
+    getNote(id) {
+      return this.hexToBech32(id, 'note')
+    },
+
     toProfile(pubkey) {
       this.$router.push('/' + this.getProfile(pubkey))
     },
 
     toEvent(id) {
-      this.$router.push('/' + this.hexToBech32(id, 'note'))
+      this.$router.push('/' + this.getNote(id))
     },
 
     shorten,
