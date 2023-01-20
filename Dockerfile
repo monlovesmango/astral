@@ -13,7 +13,6 @@ RUN apk --no-cache --virtual build-dependencies add \
   && apk del build-dependencies
 
 COPY . /app/build
-ENV GENERATE_SOURCEMAP=false
 RUN NODE_OPTIONS="--max-old-space-size=1024" npx quasar build -m pwa
 
 FROM nginx as nginx-astral
