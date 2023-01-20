@@ -128,8 +128,10 @@ function searchAndUpdateThreads(threads, route, ...events) {
   if (insertThreads.length) {
     let thread = threads[insertThreads[0].thread]
     let index = insertThreads[0].threadIndex
+    if (index >= thread - 1) return
     if (!thread[index].replies) thread[index].replies = []
     let slicedReply = thread.slice(index + 1)
+    if (!slicedReply.length) return
     try {
       slicedReply[0].latest_created_at = slicedReply[slicedReply.length - 1].latest_created_at
     } catch (e) {

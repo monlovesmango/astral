@@ -32,8 +32,8 @@
     <BasePostThread v-for='(item, index) in items' :key='index' :events="item" class='full-width' @add-event='processEvent'/>
     <BaseButtonLoadMore
       :loading-more='loadingMore'
-      :label='items.length === feed[tab].length ? "load another day" : "load 100 more"'
-      @click='loadMore'
+      label='load more'
+      @click='loadMore(tab)'
     />
   </q-page>
 </template>
@@ -43,20 +43,9 @@ import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
 import {addToThread} from '../utils/threads'
 import {isValidEvent} from '../utils/event'
-import {dbFeed, dbUserFollows} from '../query'
+import {getFeed} from '../query'
 import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
 import { createMetaMixin } from 'quasar'
-
-
-    // const debouncedAddToThread = mergebounce(
-    //   events => {
-    //     if (this.follows.includes(event.pubkey)) addToThread(this.feed.follows, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-    //     if (this.isBot(event)) addToThread(this.feed.bots, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-    //     else addToThread(this.feed.global, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-    //   },
-    //   500,
-    //   { 'concatArrays': true, 'promise': true, maxWait: 1000 }
-    // )
 
 const metaData = {
   // sets document title
@@ -78,20 +67,20 @@ export default defineComponent({
     BaseButtonLoadMore,
   },
 
-  watch: {
-    lookingAround(curr, prev) {
-      if (curr) {
-        this.loadMore()
-      }
-    }
-  },
+  // watch: {
+  //   lookingAround(curr, prev) {
+  //     if (curr) {
+  //       this.loadMore()
+  //     }
+  //   }
+  // },
 
-  props: {
-    lookingAround: {
-      type: Boolean,
-      default: false,
-    }
-  },
+  // props: {
+  //   lookingAround: {
+  //     type: Boolean,
+  //     default: false,
+  //   }
+  // },
 
   data() {
     return {
@@ -102,12 +91,12 @@ export default defineComponent({
         AI: [],
         bots: []
       },
-      feedCounts: {
-        follows: 100,
-        global: 100,
-        AI: 100,
-        bots: 100
-      },
+      // feedCounts: {
+      //   follows: 100,
+      //   global: 100,
+      //   AI: 100,
+      //   bots: 100
+      // },
       unreadFeed: {
         follows: [],
         global: [],
@@ -121,11 +110,11 @@ export default defineComponent({
       loadingMore: true,
       loadingUnread: false,
       tab: 'follows',
-      since: Math.round(Date.now() / 1000) - (4 * 60 * 60),
+      since: Math.round(Date.now() / 1000),
       until: Math.round(Date.now() / 1000),
-      profilesUsed: new Set(),
+      // profilesUsed: new Set(),
       // index: 0,
-      lastLoaded: this.$store.state.config.timestamps.lastFeedLoad,
+      lastLoaded: Math.round(Date.now() / 1000),
       refreshInterval: null,
       unsubscribe: null,
     }
@@ -133,46 +122,42 @@ export default defineComponent({
 
   computed: {
     items() {
-      return this.feed[this.tab].slice(0, this.feedCounts[this.tab])
+      return this.feed[this.tab]
     }
   },
 
   async mounted() {
-    this.bots = await this.getFollows(this.botTracker)
-    this.follows = this.$store.state.follows
+    this.loadMore(this.tab)
+    //   if (this.loadingMore) this.loadingMore = false
 
-    // if (this.$store.state.keys.pub) setTimeout(this.loadMore(), 4000)
-    // else {
-    //   this.unsubscribe = this.$store.subscribe((mutation, state) => {
-    //     switch (mutation.type) {
-    //       case 'setKeys': {
-    //         this.loadingMore = true
-    //         setTimeout(this.loadMore(), 4000)
-    //         break
-    //       }
-    //     }
-    //   })
+    // this.bots = await this.getFollows(this.botTracker)
+    // this.follows = this.$store.state.follows
+
+    // if (this.follows.length === 0) {
+    //   this.tab = 'global'
     // }
 
-    if (this.follows.length === 0) {
+    if (this.$store.state.follows.length === 0) {
       this.tab = 'global'
     }
 
-
     this.refreshInterval = setInterval(async () => {
-      let results = await dbFeed(this.since)
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+      // let results = await dbFeed(this.since)
+      let results = await getFeed({ relays, since: this.since, limit: 500 })
       // let feed = this.feed.global.length ? this.unreadFeed : this.feed
       if (results) for (let event of results) this.processEvent(event)
       // for (let feedName of Object.keys(this.feed)) {
       //   this.feed[feed] = this.feed[feed].concat(feed[feed])
       // }
-      if (this.loadingMore) this.loadingMore = false
-    }, 5000)
+      // if (this.loadingMore) this.loadingMore = false
+      this.since = Math.round(Date.now() / 1000)
+    }, 10000)
   },
 
   async beforeUnmount() {
     if (this.listener) this.listener.cancel()
-    this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+    // this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
     if (this.unsubscribe) this.unsubscribe()
     if (this.refreshInterval) clearInterval(this.refreshInterval)
   },
@@ -180,69 +165,77 @@ export default defineComponent({
   methods: {
     async loadMore() {
       this.loadingMore = true
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
 
-      if (this.items.length < this.feed[this.tab].length) {
-        console.log('just increased counts')
-        this.feedCounts[this.tab] += 100
-        this.loadingMore = false
-        return
+      // if (this.items.length < this.feed[this.tab].length) {
+      //   console.log('just increased counts')
+      //   this.feedCounts[this.tab] += 100
+      //   this.loadingMore = false
+      //   return
+      // }
+
+      let loadedFeed = {
+        follows: [],
+        global: [],
+        AI: [],
+        bots: []
       }
+      // let lastThread = this.feed[feedName][this.feed[feedName].length - 1]
+      // let until = lastThread ? lastThread[lastThread.length - 1].latest_created_at : Math.round(Date.now() / 1000)
+      // console.log('until', until, this.feed[feedName])
+      // let loadedFeed = []
 
-      let loadedFeed = {}
-      for (let feed of Object.keys(this.feed)) {
-        loadedFeed[feed] = []
-      }
-
-      this.since = this.since - (4 * 60 * 60)
-      let results = await dbFeed(this.since)
+      let results = await getFeed({ relays, until: this.until + (5 * 60), limit: 300 })
       if (results) for (let event of results) this.processEvent(event, loadedFeed)
-      for (let feed of Object.keys(this.feed)) {
-        this.feed[feed] = this.feed[feed].concat(loadedFeed[feed])
+      for (let feedName of Object.keys(this.feed)) {
+        this.feed[feedName] = this.feed[feedName].concat(loadedFeed[feedName])
       }
 
-        console.log('loaded feed', this.feed, this.counts)
+        // console.log('loaded feed', results, this.feed, this.counts)
 
       this.loadingMore = false
     },
 
     loadUnread() {
       this.loadingUnread = true
-      this.feed[this.tab] = this.unreadFeed[this.tab].concat(this.feed[this.tab])
-      this.unreadFeed[this.tab] = []
-      this.lastLoaded = Math.round(Date.now() / 1000)
-      this.loadingUnread = false
+      setTimeout(() => {
+        this.feed[this.tab] = this.unreadFeed[this.tab].concat(this.feed[this.tab])
+        this.unreadFeed[this.tab] = []
+        this.lastLoaded = Math.round(Date.now() / 1000)
+        this.loadingUnread = false
+      }, 100)
     },
 
     processEvent(event, activeFeed = this.feed, unreadFeed = this.unreadFeed) {
       if (!isValidEvent(event)) return
       if (this.feedSet.has(event.id)) return
-      if (event.created_at < this.since) return
+      // if (event.created_at < this.since) return
       this.feedSet.add(event.id)
       this.interpolateEventMentions(event)
       this.useProfile(event.pubkey)
-
+      if (this.until > event.created_at) this.until = event.created_at
       // this.debouncedAddToThread([event])
       let feed
       if (event.pubkey === this.$store.state.keys.pub) feed = activeFeed
-      else feed = (event.created_at > this.until) ? unreadFeed : activeFeed
-      if (this.follows.includes(event.pubkey)) addToThread(feed.follows, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      if (this.isBot(event)) addToThread(feed.bots, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      if (this.isAI(event)) addToThread(this.feed.AI, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      else addToThread(feed.global, Object.assign({}, event), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      else feed = (event.created_at > this.lastLoaded) ? unreadFeed : activeFeed
+      if (this.$store.state.follows.includes(event.pubkey)) addToThread(feed.follows, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      if (this.isBot(event)) addToThread(feed.bots, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      if (this.isAI(event)) addToThread(this.feed.AI, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      else addToThread(feed.global, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
     },
 
-    async getFollows(pubkey) {
-      let event = await dbUserFollows(pubkey)
-      if (!event) return []
-      return event.tags
-        .filter(([t, v]) => t === 'p' && v)
-        .map(([_, v]) => v)
-    },
+    // async getFollows(pubkey) {
+      // let event = await dbUserFollows(pubkey)
+      // if (!event) return []
+      // return event.tags
+      //   .filter(([t, v]) => t === 'p' && v)
+      //   .map(([_, v]) => v)
+    // },
 
     useProfile(pubkey) {
-      if (this.profilesUsed.has(pubkey)) return
+      // if (this.profilesUsed.has(pubkey)) return
 
-      this.profilesUsed.add(pubkey)
+      // this.profilesUsed.add(pubkey)
       this.$store.dispatch('useProfile', {pubkey})
     },
 

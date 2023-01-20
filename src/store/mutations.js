@@ -1,20 +1,15 @@
 import {getPublicKey} from 'nostr-tools'
-import {normalizeRelayURL} from 'nostr-tools/relay'
-import {
-  seedFromWords,
-  generateSeedWords,
-  privateKeyFromSeed
-} from 'nostr-tools/nip06'
+import {nip06} from 'nostr-tools'
 // import Vuex from 'vuex'
 
 export function setKeys(state, {mnemonic, priv, pub} = {}) {
   if (!mnemonic && !priv && !pub) {
-    mnemonic = generateSeedWords()
+    mnemonic = nip06.generateSeedWords()
   }
 
   if (mnemonic) {
-    let seed = seedFromWords(mnemonic)
-    priv = privateKeyFromSeed(seed)
+    let seed = nip06.seedFromWords(mnemonic)
+    priv = nip06.privateKeyFromSeed(seed)
   }
 
   if (priv) {
@@ -108,6 +103,29 @@ export function addProfileToCache(
   }
 }
 
+export function addEventToCache(
+  state,
+  event
+) {
+  let {id} = event
+  if (id in state.eventsCache) {
+    // was here already, remove from LRU (will readd next)
+    state.eventsCacheLRU.splice(state.eventsCacheLRU.indexOf(id), 1)
+  }
+
+  // replace the event in cache
+  state.eventsCache[id] = event
+
+  // adding to LRU
+  state.eventsCacheLRU.push(id)
+
+  // removing older stuff if necessary
+  if (state.eventsCacheLRU.length > 1000) {
+    let oldest = state.eventsCacheLRU.shift()
+    delete state.eventsCache[oldest]
+  }
+}
+
 export function addToNIP05VerificationCache(state, {identifier, pubkey}) {
   state.nip05VerificationCache[identifier] = {
     pubkey,
@@ -174,4 +192,12 @@ export function setConfig(state, {key, value}) {
 
 export function setConfigLightningTips(state, {key, value}) {
   state.config.preferences.lightningTips[key] = value
+}
+
+function normalizeRelayURL(url) {
+  let [host, ...qs] = url.trim().split('?')
+  if (host.slice(0, 4) === 'http') host = 'ws' + host.slice(4)
+  if (host.slice(0, 2) !== 'ws') host = 'wss://' + host
+  if (host.length && host[host.length - 1] === '/') host = host.slice(0, -1)
+  return [host, ...qs].join('?')
 }

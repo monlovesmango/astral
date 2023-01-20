@@ -1,6 +1,6 @@
 import * as DOMPurify from 'dompurify'
 // import { Dialog } from 'quasar'
-import {getEventHash, signEvent} from 'nostr-tools/event'
+import {getEventHash, signEvent} from 'nostr-tools'
 
 export function cleanEvent(event) {
   return {
@@ -22,7 +22,7 @@ export function metadataFromEvent(event) {
     metadata.created_at = event.created_at
     return metadata
   } catch (_) {
-    console.log('metadataFromEvent error', _)
+    console.log('metadataFromEvent error', _, event)
     return {}
   }
 }
@@ -43,7 +43,7 @@ export function isValidEvent(event) {
 export async function signAsynchronously(event, store) {
   event.id = getEventHash(event)
   if (store.state.keys.priv) {
-    event.sig = await signEvent(event, store.state.keys.priv)
+    event.sig = signEvent(event, store.state.keys.priv)
   } else if (window.nostr) {
     let signatureOrEvent = await window.nostr.signEvent(event)
     switch (typeof signatureOrEvent) {

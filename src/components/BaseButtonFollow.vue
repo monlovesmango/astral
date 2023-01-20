@@ -47,8 +47,22 @@ export default defineComponent({
 
   methods: {
     toggleFollowing() {
-      if (this.isFollowing) this.unfollow()
-      else this.follow()
+      if (!this.$store.state.follows.length) {
+        this.$q
+          .dialog({
+            title: 'set your first follow?',
+            message: `if you are a new user click proceed. if you are a user that already has a follows list, astral has not been
+            able to find it yet. if you hit proceed it will clear your follows list and replace it with this single follow.`,
+            cancel: {color: 'accent'},
+            ok: {color: 'accent', label: 'proceed'}
+          })
+          .onOk(() => {
+            this.follow()
+          })
+      } else {
+        if (this.isFollowing) this.unfollow()
+        else this.follow()
+      }
     },
     unfollow() {
       this.$store.commit('unfollow', this.pubkey)

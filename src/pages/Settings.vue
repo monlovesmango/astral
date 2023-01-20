@@ -218,11 +218,10 @@
 <script>
 import {LocalStorage} from 'quasar'
 import {nextTick} from 'vue'
-import {queryName} from 'nostr-tools/nip05'
+import {nip05} from 'nostr-tools'
 // import fetch from 'cross-fetch'
 
 import helpersMixin from '../utils/mixin'
-import {dbErase} from '../query'
 // import { setCssVar } from 'quasar'
 // import BaseSelect from 'components/BaseSelect.vue'
 import BaseSelectMultiple from 'components/BaseSelectMultiple.vue'
@@ -342,6 +341,7 @@ export default {
         // }
       }
     })
+    this.cloneMetadata()
     this.cloneRelays()
   },
 
@@ -375,7 +375,7 @@ export default {
       if (this.metadata.nip05 === '') this.metadata.nip05 = undefined
       if (this.metadata.nip05) {
         if (
-          (await queryName(this.metadata.nip05)) !== this.$store.state.keys.pub
+          (await nip05.queryName(this.metadata.nip05)) !== this.$store.state.keys.pub
         ) {
           this.$q.notify({
             message: 'Failed to verify NIP05 identifier on server.',
@@ -486,7 +486,6 @@ export default {
         })
         .onOk(async () => {
           LocalStorage.clear()
-          await dbErase()
           window.location.reload()
         })
     },

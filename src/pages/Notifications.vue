@@ -16,7 +16,7 @@
 <script>
 import helpersMixin from '../utils/mixin'
 import { addSorted } from '../utils/helpers'
-import {dbMentions, listenMentions} from '../query'
+import {dbMentions} from '../query'
 import { createMetaMixin } from 'quasar'
 import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
 
@@ -44,56 +44,44 @@ export default {
       notifications: [],
       notificationsSet: new Set(),
       reachedEnd: false,
-      sub: null,
+      unsubscribe: null,
       reading: false,
-      profilesUsed: new Set(),
       loadingMore: true,
     }
   },
-
-  async activated() {
+  mounted() {
     this.start()
   },
 
-  async deactivated() {
+  activated() {
+    if (this.$store.state.unreadNotifications) this.loadNew()
+    this.highlightUnreadNotifications()
+  },
+
+  deactivated() {
     this.$store.commit('haveReadNotifications')
-    if (this.sub) this.sub.cancel()
-    this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+  },
+
+  beforeUnmount() {
+    if (this.unsubscribe) this.unsubscribe()
   },
 
   methods: {
     async start() {
-      // this.useProfile(this.hexPubkey)
       this.loadingMore = true
 
-      if (this.$store.state.unreadNotifications) this.loadNew()
+      this.loadMore()
 
-
-      let timer = setTimeout(async() => {
-          this.loadMore()
-      }, 4000)
-
-      this.sub = listenMentions(this.$store.state.keys.pub, async event => {
-        if (!timer) await this.processNotifications([event])
-        if (timer) clearTimeout(timer)
-        timer = setTimeout(async() => {
-          this.loadMore()
-          clearTimeout(timer)
-          timer = null
-        }, 500)
-        // if (loadedNotificationsFiltered.length === 0) return
-        // this.notifications = loadedNotificationsFiltered.concat(this.notifications)
+      this.unsubscribe = this.$store.subscribe(({type, payload}, state) => {
+        switch (type) {
+          case 'setUnreadNotifications':
+            this.loadNew()
+            break
+        }
       })
-      // this.sub.streamUserNotes = await streamUserNotes(this.hexPubkey, event => {
-      //   if (!timer) this.processUserNotes([event], this.threads)
-      //   if (timer) clearTimeout(timer)
-      //   timer = setTimeout(async() => {
-      //     this.loadMore()
-      //     clearTimeout(timer)
-      //     timer = null
-      //   }, 500)
-      // })
+
       this.highlightUnreadNotifications()
+      this.loadingMore = false
     },
     async loadMore() {
       let until
@@ -101,7 +89,7 @@ export default {
       else until = Math.round(Date.now() / 1000)
       let loadedNotifications = await dbMentions(
         this.$store.state.keys.pub,
-        40,
+        50,
         until
       )
       // if (loadedNotifications.length < 40) {
@@ -115,10 +103,10 @@ export default {
       this.loadingMore = false
     },
 
-    async loadNew() {
+    async loadNew(limit = 40) {
       let loadedNotifications = await dbMentions(
         this.$store.state.keys.pub,
-        40
+        limit
       )
       await this.processNotifications(loadedNotifications)
       // this.notifications = loadedNotificationsFiltered.concat(this.notifications)
@@ -183,9 +171,6 @@ export default {
     },
 
     useProfile(pubkey) {
-      if (this.profilesUsed.has(pubkey)) return
-
-      this.profilesUsed.add(pubkey)
       this.$store.dispatch('useProfile', {pubkey})
     },
   }

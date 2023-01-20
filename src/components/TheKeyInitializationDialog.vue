@@ -171,8 +171,8 @@
 <script>
 import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
-import { validateWords } from 'nostr-tools/nip06'
-import { generatePrivateKey } from 'nostr-tools'
+// import { nip06 } from 'nostr-tools'
+import { generatePrivateKey, nip06 } from 'nostr-tools'
 // import { decode } from 'bech32-buffer'
 import BaseSelectMultiple from 'components/BaseSelectMultiple.vue'
 import BaseInformation from 'components/BaseInformation.vue'
@@ -222,7 +222,7 @@ export default defineComponent({
 
     isKeyValid() {
       if (this.isKeyKey) return true
-      if (validateWords(this.key?.toLowerCase())) return true
+      if (nip06.validateWords(this.key?.toLowerCase())) return true
       return false
     },
 
@@ -299,9 +299,11 @@ export default defineComponent({
       let key = this.hexKey
 
       var keys = {}
-      if (validateWords(key)) {
-        keys.mnemonic = key
-      } else if (this.isKey(key)) {
+      // eslint-disable-next-line no-undef
+      // if (validateWords(key)) {
+      //   keys.mnemonic = key
+      // } else if (this.isKey(key)) {
+      if (this.isKey(key)) {
         if (this.watchOnly) keys.pub = key
         else keys.priv = key
       } else {

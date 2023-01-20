@@ -31,16 +31,30 @@ export default {
   },
   methods: {
     addRelay() {
-      this.$q
-        .dialog({
-          title: 'Add relay?',
-          message: `Add ${this.url} to your list of relays?`,
-          cancel: {color: 'accent'},
-          ok: {color: 'accent'}
-        })
-        .onOk(() => {
-          this.$store.commit('addRelay', this.url)
-        })
+      if (!Object.keys(this.$store.state.relays).length) {
+        this.$q
+          .dialog({
+            title: 'set your first relay?',
+            message: `if you are a new user click proceed. if you are a user that already has a relay list, astral has not been
+            able to find it yet. if you hit proceed it will clear your relay list and replace it with this single relay.`,
+            cancel: {color: 'accent'},
+            ok: {color: 'accent', label: 'proceed'}
+          })
+          .onOk(() => {
+            this.$store.commit('addRelay', this.url)
+          })
+      } else {
+        this.$q
+          .dialog({
+            title: 'Add relay?',
+            message: `Add ${this.url} to your list of relays?`,
+            cancel: {color: 'accent'},
+            ok: {color: 'accent'}
+          })
+          .onOk(() => {
+            this.$store.commit('addRelay', this.url)
+          })
+      }
     }
   }
 }

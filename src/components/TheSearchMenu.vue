@@ -100,7 +100,7 @@
 import { defineComponent } from 'vue'
 import {Notify} from 'quasar'
 import Draggable from 'vuedraggable'
-import {searchDomain, queryName} from 'nostr-tools/nip05'
+import {nip05} from 'nostr-tools'
 import helpersMixin from '../utils/mixin'
 import BaseButtonClear from 'components/BaseButtonClear.vue'
 
@@ -147,9 +147,9 @@ export default defineComponent({
     }
   },
 
-  deactivated() {
-    this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
-  },
+  // deactivated() {
+  //   this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+  // },
 
   methods: {
 
@@ -184,7 +184,7 @@ export default defineComponent({
           if (this.searchingProfile.match(/^@/) || !this.searchingProfile.match(/@/)) {
           //   this.searchingProfile = '_' + this.searchingProfile
           // else if (!this.searchingProfile.match(/@/)) this.searchingProfile = '_@' + this.searchingProfile
-          this.domainNames = await searchDomain(this.domain)
+          this.domainNames = await nip05.searchDomain(this.domain)
           // this.domainUsers
           if (this.domainUsers.length || this.domainDefaultPubkey) {
             if (this.domainDefaultPubkey) this.useProfile(this.domainDefaultPubkey)
@@ -196,7 +196,7 @@ export default defineComponent({
           }
         // }
         console.log('this.domainUsers', this.domainUsers)
-        let pubkey = await queryName(this.searchingProfile)
+        let pubkey = await nip05.queryName(this.searchingProfile)
         console.log('queryName returned: ', pubkey)
         if (pubkey) {
           this.toProfile(pubkey)

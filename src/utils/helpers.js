@@ -1,4 +1,4 @@
-import {dbUserProfile, dbEvent} from '../query'
+import {dbProfile, dbEvent} from '../query'
 
 export function shorten(str, number = 5) {
   if (!str) return ''
@@ -99,7 +99,7 @@ export async function processMentions(event) {
 
 export async function getPubKeyTagWithRelay(pubkey) {
   var base = ['p', pubkey]
-  let event = await dbUserProfile(pubkey)
+  let event = await dbProfile(pubkey)
   if (event && event.seen_on && event.seen_on.length) {
     let random = event.seen_on[Math.floor(Math.random() * event.seen_on.length)]
     base.push(random)

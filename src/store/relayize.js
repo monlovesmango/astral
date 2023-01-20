@@ -2,7 +2,6 @@
 
 // import {pool} from '../pool'
 
-import { setRelays } from '../query'
 
 // const addRelay = debounce((store, url) => {
 //   pool.addRelay(url)
@@ -21,12 +20,6 @@ import { setRelays } from '../query'
 export default function (store) {
   store.subscribe(({type, payload}, state) => {
     switch (type) {
-      case 'addRelay':{
-        let relays = Object.assign({}, store.state.relays)
-        relays[payload] = {read: true, write: true}
-        setRelays(relays)
-        break
-      }
       // case 'removeRelay':
       //   removeRelay(store, payload)
       //   break
@@ -35,10 +28,11 @@ export default function (store) {
       //   break
 
       case 'saveRelays':
-        setRelays(payload)
-        break
       case 'follow':
       case 'unfollow':
+      case 'setRelays':
+      case 'addRelay':
+      case 'removeRelay':
         store.dispatch('restartMainSubscription')
         break
     }

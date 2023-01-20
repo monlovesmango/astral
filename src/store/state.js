@@ -122,6 +122,8 @@ export default function () {
 
     profilesCache: {}, // { [pubkey]: {name, about, picture, ...} }
     profilesCacheLRU: [], // [ pubkeys... ]
+    eventsCache: {}, // { [id]: event }
+    eventsCacheLRU: [], // [ ids... ]
     contactListCache: {}, // { [pubkey]: {name, about, picture, ...} }
     contactListCacheLRU: [], // [ pubkeys... ]
     nip05VerificationCache: {}, // { [identifier]: {pubkey, when }

@@ -5,6 +5,7 @@
     <div ref='ancestors' v-if="ancestorsCompiled.length || rootAncestor">
       <BasePostThread :events="ancestorsCompiled" is-ancestors @add-event='addEventAncestors'/>
     </div>
+    <BaseButtonShowMore v-if="ancestorsMissing" :root="ancestorsMissing"/>
 
     <q-item ref="main" class='no-padding column'>
       <BasePost
@@ -39,6 +40,7 @@ import helpersMixin from '../utils/mixin'
 import {addToThread} from '../utils/threads'
 import BaseRelayList from 'components/BaseRelayList.vue'
 import { createMetaMixin } from 'quasar'
+import BaseButtonShowMore from 'components/BaseButtonShowMore'
 
 const metaData = {
   // sets document title
@@ -57,7 +59,8 @@ export default defineComponent({
   emits: ['scroll-to-rect'],
   mixins: [helpersMixin, createMetaMixin(metaData)],
   components: {
-    BaseRelayList
+    BaseRelayList,
+    BaseButtonShowMore
   },
 
   data() {
@@ -75,6 +78,16 @@ export default defineComponent({
     }
   },
 
+  // watch: {
+  //   '$route.params.eventId'(curr, prev) {
+  //     console.log('(curr, prev)', curr, prev)
+  //     if (prev !== curr) {
+  //       this.stop()
+  //       this.start()
+  //     }
+  //   }
+  // },
+
   computed: {
     childrenThreadsFiltered() {
       return this.childrenThreads.filter(thread => thread[0].interpolated.replyEvents.includes(this.hexEventId))
@@ -86,11 +99,19 @@ export default defineComponent({
     },
     hexEventId() {
       return this.bech32ToHex(this.$route.params.eventId)
+    },
+    ancestorsMissing() {
+      let ancestors = this.ancestorsCompiled
+      if (!ancestors?.length) return false
+      let closestAncestor = ancestors[ancestors.length - 1]
+      let replyEvents = this.event.interpolated.replyEvents
+      let replyId = replyEvents[replyEvents.length - 1]
+      return closestAncestor.id === replyId ? null : closestAncestor.id
     }
   },
 
   mounted() {
-    this.start()
+    if (this.hexEventId) this.start()
   },
 
   beforeUnmount() {
@@ -99,7 +120,11 @@ export default defineComponent({
 
   methods: {
     async start() {
-      this.sub.event = await dbStreamEvent(this.hexEventId, event => {
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+      this.sub.event = await dbStreamEvent({ ids: [this.hexEventId], relays }, events => {
+        console.log('dbStreamEvent events', events)
+        if (!events?.length) return
+        let event = events[0]
         let getAncestorsChildren = false
         if (!this.event) getAncestorsChildren = true
         this.interpolateEventMentions(event)
@@ -119,32 +144,54 @@ export default defineComponent({
       if (this.sub.event) this.sub.event.cancel()
       if (this.sub.ancestorsChildren) this.sub.ancestorsChildren.cancel()
       if (this.sub.rootAncestor) this.sub.rootAncestor.cancel()
-      this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+
+      this.replying = false
+      this.ancestors = []
+      this.ancestorsSeen = new Map()
+      this.ancestorIds = []
+      this.rootAncestor = null
+      this.event = null
+      this.childrenThreads = []
+      this.childrenSet = new Set()
+      this.sub = {}
+      this.profilesUsed = new Set()
     },
 
     async subRootAncestor() {
-      this.sub.rootAncestor = await dbStreamEvent(this.event.interpolated.replyEvents[0], event => {
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+      this.sub.rootAncestor = await dbStreamEvent({ ids: [this.event.interpolated.replyEvents[0]], relays }, events => {
+        if (!events?.length) return
+        let event = events[0]
         this.processAncestorEvent(event)
         this.sub.rootAncestor.cancel()
       })
     },
 
     async subAncestorsChildren() {
+      if (!this.hexEventId) return
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
       let tags = this.event?.interpolated?.replyEvents?.length ? [this.hexEventId, this.event.interpolated.replyEvents[0]] : [this.hexEventId]
 
-      if (this.sub.ancestorsChildren) this.sub.ancestorsChildren.update('e', tags, 1)
-      else this.sub.ancestorsChildren = await dbStreamTagKind('e', tags, 1, event => {
-        if (this.event && event.created_at < this.event.created_at) {
-          this.processAncestorEvent(event)
-          return
+      console.log('subAncestorsChildren', tags)
+      if (this.sub.ancestorsChildren) this.sub.ancestorsChildren.update({type: 'e', values: tags, kinds: [1], relays})
+      else this.sub.ancestorsChildren = await dbStreamTagKind({type: 'e', values: tags, kinds: [1], relays}, events => {
+        console.log('subAncestorsChildren events', events, events.length)
+        for (let event of events) {
+        console.log('subAncestorsChildren event', event)
+          if (this.event && event.created_at < this.event.created_at) {
+            this.processAncestorEvent(event)
+        console.log('processAncestorEvent events', event)
+          } else {
+            this.processChildEvent(event)
+          console.log('processChildEvent events', event)
+          }
         }
-        this.processChildEvent(event)
-        return
       })
     },
 
     processAncestorEvent(event) {
       let currAncestor = this.ancestors.length ? this.ancestors[this.ancestors.length - 1] : this.event
+        // console.log('processAncestorEvent events', event, currAncestor, this.ancestors, this.event, this.rootAncestor)
       if (currAncestor.interpolated.replyEvents.length === 0) return
 
       let existing = this.ancestorsSeen.get(event.id)
@@ -191,9 +238,6 @@ export default defineComponent({
     },
 
     useProfile(pubkey) {
-      if (this.profilesUsed.has(pubkey)) return
-
-      this.profilesUsed.add(pubkey)
       this.$store.dispatch('useProfile', {pubkey})
     },
   }

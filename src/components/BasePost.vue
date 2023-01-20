@@ -100,15 +100,19 @@
           class='reposts flex column q-pr-md'
           :clickable='false'
         >
-          <BasePost
-            v-for='(repost, index) in reposts'
-            :key='repost.id + "_" + reposts.length + "_" + index'
-            :event='repost'
-            :manual-focus='false'
-            :is-embeded='true'
-            @click.stop="toEvent(repost.id)"
-            @resized='calcConnectorValues(10)'
-          />
+          <div
+            v-for='(eventId, index) in mentionEvents'
+            :key='eventId + "_" + mentionEvents.length + "_" + index'
+          >
+            <BasePost
+              v-if='$store.state.eventsCache[eventId]'
+              :event='$store.state.eventsCache[eventId]'
+              :manual-focus='false'
+              :is-embeded='true'
+              @click.stop="toEvent(eventId)"
+              @resized='calcConnectorValues(10)'
+            />
+          </div>
         </div>
       <!-- </q-item-label> -->
         <div
@@ -359,11 +363,11 @@ export default defineComponent({
     this.trigger++
   },
 
-  deactivated() {
-    if (this.reposts.length) {
-      for (let event of this.reposts) this.$store.dispatch('cancelUseProfile', {pubkey: event.pubkey})
-    }
-  },
+  // deactivated() {
+  //   if (this.reposts.length) {
+  //     for (let event of this.reposts) this.$store.dispatch('cancelUseProfile', {pubkey: event.pubkey})
+  //   }
+  // },
 
   methods: {
     childReplyConnectorStyle() {

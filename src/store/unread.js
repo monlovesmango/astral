@@ -2,7 +2,8 @@ import {
   dbChats,
   dbUnreadMessagesCount,
   dbUnreadMentionsCount,
-  streamUserTags
+  streamMainMentions,
+  streamMainIncomingMessages,
 } from '../query'
 
 export default function (store) {
@@ -27,28 +28,21 @@ export default function (store) {
     })
   }
 
-  let sub = null
-  const streamMentionsAndMessages = () => {
+  let sub = {}
+  const streamMentionsAndMessages = async () => {
+    let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
     if (store.state.keys.pub) {
-      if (sub) sub.cancel()
-      sub = streamUserTags(store.state.keys.pub, event => {
-        if (event.kind === 1) setUnreadNotifications()
-        else if (event.kind === 4) setUnreadMessages(event.pubkey)
-      })
-    } else {
-      let interval = setInterval(() => {
-        if (store.state.keys.pub && !sub) {
-          streamUserTags('p', store.state.keys.pub, event => {
-              if (event.kind === 1) setUnreadNotifications()
-              else if (event.kind === 4) setUnreadMessages(event.pubkey)
-          })
-          clearInterval(interval)
-        }
-      }, 2000)
-    }
+      if (sub.streamMainMentions) sub.streamMainMentions.update({ authors: [store.state.keys.pub], relays })
+      else sub.streamMainMentions = await streamMainMentions({ authors: [store.state.keys.pub], relays }, () => setUnreadNotifications())
 
-    setUnreadNotifications()
-    dbChats(store.state.keys.pub).then(chats => { chats.forEach(chat => { setUnreadMessages(chat.peer) }) })
+      if (sub.streamMainIncomingMessages) sub.streamMainIncomingMessages.update({ authors: [store.state.keys.pub], relays })
+      else sub.streamMainIncomingMessages = await streamMainIncomingMessages({ authors: [store.state.keys.pub], relays }, events => {
+        for (let event of events) setUnreadMessages(event.pubkey)
+      })
+
+      setUnreadNotifications()
+      dbChats(store.state.keys.pub).then(chats => { chats.forEach(chat => { setUnreadMessages(chat.peer) }) })
+    }
   }
 
 

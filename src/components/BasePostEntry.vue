@@ -592,7 +592,8 @@ export default {
       //   message: text,
       //   tags: tags
       // })
-      publish(cleanEvent(this.event))
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+      publish(cleanEvent(this.event), relays)
       return await this.$store.dispatch('sendPost', {
         message: text,
         tags: tags

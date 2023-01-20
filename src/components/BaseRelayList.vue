@@ -69,7 +69,8 @@ export default {
   },
   methods: {
     publishTo(relayURL) {
-      publish(cleanEvent(this.event), relayURL)
+      let relays = [relayURL]
+      publish(cleanEvent(this.event), relays)
     }
 
   },

@@ -1,7 +1,11 @@
 <template>
   <q-page>
-    <BaseHeader>{{ $t('inbox') }}</BaseHeader>
-
+    <BaseHeader>
+      <div class='flex row no-wrap justify-start' style='gap: 1rem;'>
+        <span>{{ $t('inbox') }}</span>
+        <q-btn v-if='$store.getters.unreadChats' label='mark all as read' @click.stop='markAllAsRead' color='secondary' outline dense/>
+      </div>
+    </BaseHeader>
     <q-list class='q-py-sm q-pr-sm q-gutter-sm'>
       <div v-if="loading" class='flex row justify-center items-start q-my-md'>
         <q-spinner-orbit color="accent"  size='md'/>
@@ -42,8 +46,7 @@
 </template>
 
 <script>
-import {dbChats} from '../query'
-import {listenMessages} from '../query'
+import {dbChats, streamMainIncomingMessages, streamMainOutgoingMessages} from '../query'
 import helpersMixin from '../utils/mixin'
 import { createMetaMixin } from 'quasar'
 
@@ -67,8 +70,7 @@ export default {
     return {
       chats: [],
       loading: true,
-      profilesUsed: new Set(),
-      sub: null,
+      sub: {},
     }
   },
 
@@ -79,26 +81,39 @@ export default {
   },
 
   async mounted() {
-    this.chats = await dbChats(this.$store.state.keys.pub)
-    this.chats.forEach(({peer}) => this.useProfile(peer))
-    if (this.allChatsNeverRead) this.chats.forEach(({peer}) => this.$store.commit('haveReadMessage', peer))
-    this.loading = false
-    this.sub = await listenMessages(async event => {
-      if (event.pubkey === this.$store.state.keys.pub) return
-      this.chats = await dbChats(this.$store.state.keys.pub)
-      this.useProfile(event.pubkey)
-    })
+    this.start()
   },
 
   beforeUnmount() {
-    if (this.sub) {
-      this.sub.cancel()
-      this.sub = null
-    }
-    this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+    this.stop()
   },
 
   methods: {
+    async start() {
+      this.loading = true
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+
+      this.getChats()
+
+      this.sub.streamMainIncomingMessages = await streamMainIncomingMessages({ authors: [this.$store.state.keys.pub], relays, limit: 1000 }, null, () => {
+        this.getChats()
+        this.loading = false
+      })
+      this.sub.streamMainOutgoingMessages = await streamMainOutgoingMessages({ authors: [this.$store.state.keys.pub], relays, limit: 1000 }, null, () => {
+        this.getChats()
+        this.loading = false
+      })
+    },
+    stop() {
+      if (this.sub.streamMainIncomingMessages) this.sub.streamMainIncomingMessages.cancel()
+      if (this.sub.streamMainOutgoingMessages) this.sub.streamMainOutgoingMessages.cancel()
+    },
+    async getChats() {
+      this.chats = await dbChats(this.$store.state.keys.pub)
+      this.chats.forEach(({peer}) => this.useProfile(peer))
+      if (this.allChatsNeverRead) this.chats.forEach(({peer}) => this.$store.commit('haveReadMessage', peer))
+    },
+
     markAllAsRead() {
       this.chats.forEach(chat => {
         this.$store.commit('haveReadMessage', chat.peer)
@@ -106,9 +121,6 @@ export default {
     },
 
     useProfile(pubkey) {
-      if (this.profilesUsed.has(pubkey)) return
-
-      this.profilesUsed.add(pubkey)
       this.$store.dispatch('useProfile', {pubkey})
     },
   }

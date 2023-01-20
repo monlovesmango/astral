@@ -116,7 +116,7 @@ import {debounce} from 'quasar'
 import helpersMixin from '../utils/mixin'
 import {addToThread} from '../utils/threads'
 import BaseUserCard from 'components/BaseUserCard.vue'
-import { dbUserProfile, streamUserProfile, dbStreamUserFollows, dbStreamUserFollowers, streamUserNotes, dbUserNotes, dbQuery } from '../query'
+import { dbProfile, streamProfile, dbStreamFollows, dbStreamFollowers, getNotes, dbQuery } from '../query'
 import BaseRelayRecommend from 'components/BaseRelayRecommend.vue'
 import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
 import BaseButtonClear from 'components/BaseButtonClear.vue'
@@ -195,46 +195,53 @@ export default defineComponent({
     async start() {
       // this.useProfile(this.hexPubkey)
       this.loadingMore = true
-      let profile = await dbUserProfile(this.hexPubkey)
-      if (profile) this.$store.dispatch('handleAddingProfileEventToCache', profile)
-      this.sub.streamUserProfile = await streamUserProfile(this.hexPubkey, async event => {
-        this.$store.dispatch('handleAddingProfileEventToCache', event)
-      })
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
 
-      let timer = setTimeout(async() => {
-          this.loadMore()
-        }, 4000)
-      this.sub.streamUserNotes = await streamUserNotes(this.hexPubkey, event => {
-        if (!timer) this.processUserNotes([event], this.threads)
-        if (timer) clearTimeout(timer)
-        timer = setTimeout(async() => {
-          this.loadMore()
-          clearTimeout(timer)
-          timer = null
-        }, 500)
+      let profile = await dbProfile(this.hexPubkey)
+      if (profile) this.$store.dispatch('handleAddingProfileEventToCache', profile)
+      this.sub.streamProfile = await streamProfile({authors: [this.hexPubkey], relays}, async events => {
+        for (let event of events) this.$store.dispatch('handleAddingProfileEventToCache', event)
       })
-      this.sub.dbStreamUserFollows = await dbStreamUserFollows(this.hexPubkey, event => {
-        if (this.followsEvent && event.created_at < this.followsEvent.created_at) return
-        this.followsEvent = event
-        this.follows = event.tags
-          .filter(([t, v]) => t === 'p' && v)
-          .map(([_, v]) => v)
-        this.relays = event.content.length ? JSON.parse(event.content) : []
-        if (this.follows.length)
-          this.follows.forEach(pubkey => this.useProfile(pubkey))
+      this.loadMore()
+
+      // let timer = setTimeout(async() => {
+      //     this.loadMore()
+      //   }, 4000)
+      // this.sub.streamUserNotes = await streamUserNotes(this.hexPubkey, event => {
+      //   if (!timer) this.processUserNotes([event], this.threads)
+      //   if (timer) clearTimeout(timer)
+      //   timer = setTimeout(async() => {
+      //     this.loadMore()
+      //     clearTimeout(timer)
+      //     timer = null
+      //   }, 500)
+      // })
+      this.sub.dbStreamFollows = await dbStreamFollows({author: this.hexPubkey, relays}, events => {
+        for (let event of events) {
+          if (this.followsEvent && event.created_at < this.followsEvent.created_at) continue
+          this.followsEvent = event
+          this.follows = event.tags
+            .filter(([t, v]) => t === 'p' && v)
+            .map(([_, v]) => v)
+          this.relays = event.content.length ? JSON.parse(event.content) : []
+          if (this.follows.length)
+            this.follows.forEach(pubkey => this.useProfile(pubkey))
+        }
       })
-      this.sub.dbStreamUserFollowers = await dbStreamUserFollowers(this.hexPubkey, event => {
-        this.followers[event.pubkey] = true
-        this.useProfile(event.pubkey)
+      this.sub.dbStreamFollowers = await dbStreamFollowers({author: this.hexPubkey, relays}, events => {
+        for (let event of events) {
+          this.followers[event.pubkey] = true
+          this.useProfile(event.pubkey)
+        }
       })
     },
 
     stop() {
-      if (this.sub.streamUserProfile) this.sub.streamUserProfile.cancel()
+      if (this.sub.streamProfile) this.sub.streamProfile.cancel()
       if (this.sub.streamUserNotes) this.sub.streamUserNotes.cancel()
-      if (this.sub.dbStreamUserFollows) this.sub.dbStreamUserFollows.cancel()
-      if (this.sub.dbStreamUserFollowers) this.sub.dbStreamUserFollowers.cancel()
-      this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
+      if (this.sub.dbStreamFollows) this.sub.dbStreamFollows.cancel()
+      if (this.sub.dbStreamFollowers) this.sub.dbStreamFollowers.cancel()
+      // this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
       if (this.interval) clearInterval(this.interval)
     },
 
@@ -261,9 +268,10 @@ export default defineComponent({
 
     async loadMore() {
       this.loadingMore = true
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
       let until = this.threads.length ? this.threads[this.threads.length - 1][0].created_at : Math.round(Date.now() / 1000)
-      let notes = await dbUserNotes(this.hexPubkey, until, 50)
-      if (notes.length < 50) this.reachedEnd = true
+      let notes = await getNotes({authors: [this.hexPubkey], until, limit: 100, relays})
+      if (notes.length < 100) this.reachedEnd = true
       let threads = []
       this.processUserNotes(notes, threads)
       this.threads = this.threads.concat(threads)

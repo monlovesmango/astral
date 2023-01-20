@@ -1,21 +1,18 @@
-import {encrypt} from 'nostr-tools/nip04'
-import {queryName} from 'nostr-tools/nip05'
+import {nip04} from 'nostr-tools'
+// import {nip05} from 'nostr-tools'
 import {Notify, debounce} from 'quasar'
 import {signAsynchronously} from '../utils/event'
-// import {pool} from '../pool'
+import fetch from 'cross-fetch'
 import {
-  dbSave,
-  dbUserProfile,
-  dbUserFollows,
-  streamFeed,
-  streamUserProfile,
-  streamUserFollows,
-  streamUser,
+  getProfiles,
+  dbProfile,
+  getEvents,
+  dbEvent,
+  dbFollows,
+  streamMainProfilesFollows,
   dbQuery,
-  setRelays,
+  dbSave,
   publish,
-  setPrivateKey,
-  // prune
 } from '../query'
 import {getPubKeyTagWithRelay} from '../utils/helpers'
 import {metadataFromEvent} from '../utils/event'
@@ -31,125 +28,52 @@ export function initKeys(store, keys) {
 
 export async function launch(store) {
   console.log('launch for ', store.state.keys.pub)
-  // if (!store.state.keys.pub) {
-  //   store.commit('setKeys') // passing no arguments will cause a new seed to be generated
 
-  //   // also initialize the lastNotificationRead value
-  //   store.commit('haveReadNotifications')
-  // }
-
-  // if we have already have a private key
-  if (store.state.keys.priv) {
-    setPrivateKey(store.state.keys.priv)
-  }
-
-  let {relays, follows} = store.state
-  if (!relays || !Object.keys(relays).length || !follows || !follows.length || follows === 'undefined') {
-    let contactList = await dbUserFollows(store.state.keys.pub)
-      if (!relays || !Object.keys(relays).length) {
-      try {
-        relays = JSON.parse(contactList.content)
-        store.commit('setRelays', relays)
-      } catch (err) {
-        /***/
-      }
-    }
-    if ((!follows || !follows.length || follows === 'undefined')) {
-      try {
-        follows = contactList.tags
-          .filter(([t, v]) => t === 'p' && v)
-          .map(([_, v]) => v)
-        store.commit('setFollows', follows)
-      } catch (err) {
-        /***/
-      }
-    }
-  }
-
-  // preload our own profile from the db
-  store.dispatch('useProfile', {pubkey: store.state.keys.pub})
-
-  // preload our follows profiles from the db
-  for (let pubkey of follows) store.dispatch('useProfile', {pubkey})
   // start listening for nostr events
-  store.dispatch('restartMainSubscription')
-}
-
-export async function launchWithoutKey(store) {
   store.dispatch('restartMainSubscription')
 }
 
 let mainSub = {}
 export async function restartMainSubscription(store) {
-  // console.log('restart main subscription for', [store.state.keys.pub].concat(store.state.following), store.state.relays)
+  // get relays
+  let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
 
-  // get lastUserMainSync
-  // let lastUserMainSync = store.state.config.timestamps?.lastUserMainSync || 0
+  // create list of users we want profile and follows events for
+  let authors = [
+    store.state.keys.pub, // main user
+    ...store.state.follows, // our follows
+    '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952', // bot tracker follows (to filter out bots in feed)
+  ]
+  // create or update main profiles and follows sup
+  if (!mainSub.streamMainProfilesFollows) mainSub.streamMainProfilesFollows = await streamMainProfilesFollows(
+    { authors, relays },
+    async events => {
+      // console.log('streamMainProfilesFollows', events)
+      for (let event of events) {
+        if (event.kind === 0) {
+          store.dispatch('handleAddingProfileEventToCache', event)
+        } else if (event.pubkey === store.state.keys.pub && event.kind === 3) {
+          let result = await dbQuery(`
+            SELECT json_extract(event,'$.created_at') created_at
+            FROM nostr
+            WHERE json_extract(event,'$.kind') = 3 AND
+              json_extract(event,'$.pubkey') = '${store.state.keys.pub}'
+            LIMIT 1
+          `)
+          if (result.length && event.created_at < result[0].created_at) return
+          let relays = JSON.parse(event.content)
+          store.commit('setRelays', relays)
 
-  // setup pool
-  let relays = Object.keys(store.state.relays).length ? store.state.relays : store.state.defaultRelays
-  await setRelays(relays)
-
-  // sub to bot tracker follows (to filter out bots in feed)
-  let botTracker = '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952'
-  let botTrackerSub = await streamUserFollows(botTracker)
-  setTimeout(() => {
-    botTrackerSub.cancel()
-  }, 60 * 1000)
-
-  // sub feed
-  if (!mainSub.streamFeed) mainSub.streamFeed = await streamFeed(Math.round(Date.now() / 1000) - (1 * 24 * 60 * 60))
-
-  // thats all if no pubkey entered
-  if (!store.state.keys.pub) return
-
-  //after 3 min prune old events and update lastUserMainSync
-  // setTimeout(() => {
-  //   prune(store.state.keys.pub, [botTracker, store.state.keys.pub].concat(store.state.follows))
-  //   if (!Object.keys(store.state.relays).length) return
-
-  //   let timestamps = store.state.config.timestamps
-  //   timestamps.lastUserMainSync = Math.round(Date.now() / 1000)
-  //   store.commit('setConfig', {key: 'timestamps', value: timestamps})
-  // }, 5 * 60 * 1000)
-
-  if (store.state.follows.length) {
-    let distinctPubkeys = {}
-    if (!mainSub.streamFollowsProfiles)
-      mainSub.streamFollowsProfiles = await streamUserProfile(store.state.follows, async event => {
-        store.dispatch('handleAddingProfileEventToCache', event)
-        distinctPubkeys[event.pubkey] = distinctPubkeys[event.pubkey] || 0
-        distinctPubkeys[event.pubkey]++
-        if (store.state.follows.length === Object.keys(distinctPubkeys).length)
-          mainSub.streamFollowsProfiles.cancel()
-      })
-  }
-    // store.state.follows.forEach(pubkey => store.dispatch('useProfile', {pubkey}))
-  if (!mainSub.streamUser) mainSub.streamUser = await streamUser(
-    store.state.keys.pub,
-    async event => {
-      if (event.kind === 3) {
-        let result = await dbQuery(`
-          SELECT json_extract(event,'$.created_at') created_at
-          FROM nostr
-          WHERE json_extract(event,'$.kind') = 3 AND
-            json_extract(event,'$.pubkey') = '${store.state.keys.pub}'
-          LIMIT 1
-        `)
-        if (result.length && event.created_at < result[0].created_at) return
-        let relays = JSON.parse(event.content)
-        store.commit('setRelays', relays)
-
-        let follows = event.tags
-          .filter(([t, v]) => t === 'p' && v)
-          .map(([_, v]) => v)
-        store.commit('setFollows', follows)
-        store.dispatch('restartMainSubscription')
-      } else if (event.kind === 0) {
-        store.dispatch('handleAddingProfileEventToCache', event)
+          let follows = event.tags
+            .filter(([t, v]) => t === 'p' && v)
+            .map(([_, v]) => v)
+          store.commit('setFollows', follows)
+          store.dispatch('restartMainSubscription')
+        }
       }
     }
   )
+  else mainSub.streamMainProfilesFollows.update({ authors, relays })
 }
 
 export async function addEvent(store, {event, relay = null}) {
@@ -159,7 +83,7 @@ export async function addEvent(store, {event, relay = null}) {
 export async function sendPost(store, {message, tags = [], kind = 1}) {
   if (message.length === 0) return
 
-  try {
+  // try {
     const unpublishedEvent = {
       pubkey: store.state.keys.pub,
       created_at: Math.floor(Date.now() / 1000),
@@ -168,19 +92,21 @@ export async function sendPost(store, {message, tags = [], kind = 1}) {
       content: message
     }
 
-
-    let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
-    if (!publishResult) throw new Error('could not publish post')
-    store.dispatch('addEvent', {event})
-    return event
-  } catch (error) {
-    Notify.create({
-      message: `could not publish post: ${error}`,
-      color: 'negative'
-    })
-    return
-  }
+    let result = await store.dispatch('publishEvent', {unpublishedEvent})
+    console.log('sendPost result', result)
+    return result
+  //   let event = await signAsynchronously(unpublishedEvent, store)
+  //   let publishResult = await publish(event)
+  //   if (!publishResult) throw new Error('could not publish post')
+  //   store.dispatch('addEvent', {event})
+  //   return event
+  // } catch (error) {
+  //   Notify.create({
+  //     message: `could not publish post: ${error}`,
+  //     color: 'negative'
+  //   })
+  //   return
+  // }
 }
 
 export async function sendChatMessage(store, {now, pubkey, text, tags}) {
@@ -189,7 +115,7 @@ export async function sendChatMessage(store, {now, pubkey, text, tags}) {
   let ciphertext = '???'
   try {
     if (store.state.keys.priv) {
-      ciphertext = encrypt(store.state.keys.priv, pubkey, text)
+      ciphertext = nip04.encrypt(store.state.keys.priv, pubkey, text)
     } else if (
       (await window?.nostr?.getPublicKey?.()) === store.state.keys.pub
     ) {
@@ -205,15 +131,16 @@ export async function sendChatMessage(store, {now, pubkey, text, tags}) {
       tags,
       content: ciphertext
     }
+    return await store.dispatch('publishEvent', {unpublishedEvent})
 
-    let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
-    if (!publishResult) throw new Error('could not publish message')
-    store.dispatch('addEvent', {event})
-    return event
+    // let event = await signAsynchronously(unpublishedEvent, store)
+    // let publishResult = await publish(event)
+    // if (!publishResult) throw new Error('could not publish message')
+    // store.dispatch('addEvent', {event})
+    // return event
   } catch (error) {
     Notify.create({
-      message: `could not publish message: ${error}`,
+      message: `could not encrypt message: ${error}`,
       color: 'negative'
     })
     return
@@ -222,7 +149,8 @@ export async function sendChatMessage(store, {now, pubkey, text, tags}) {
 
 export async function publishContactList(store) {
   // extend the existing tags
-  let oldEvent = await dbUserFollows(store.state.keys.pub)
+  let [oldEvent] = await dbFollows(store.state.keys.pub)
+  console.log('oldEvent poblishContactList', oldEvent)
   var tags = oldEvent?.tags || []
 
   // check existing event because it might contain more data in the
@@ -240,7 +168,7 @@ export async function publishContactList(store) {
     })
   )
 
-  try {
+  // try {
     let unpublishedEvent = {
       pubkey: store.state.keys.pub,
       created_at: Math.floor(Date.now() / 1000),
@@ -248,42 +176,42 @@ export async function publishContactList(store) {
       tags: newTags,
       content: JSON.stringify(store.state.relays)
     }
+    return await store.dispatch('publishEvent', {unpublishedEvent})
 
-    let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
-    if (!publishResult) throw new Error('could not publish updated list of followed keys and relays')
-    store.dispatch('addEvent', {event})
+  //   let event = await signAsynchronously(unpublishedEvent, store)
+  //   let publishResult = await publish(event)
+  //   if (!publishResult) throw new Error('could not publish updated list of followed keys and relays')
+  //   store.dispatch('addEvent', {event})
 
-    let relays, follows
-    relays = JSON.parse(event.content)
-    follows = event.tags
-      .filter(([t, v]) => t === 'p' && v)
-      .map(([_, v]) => v)
+  //   let relays, follows
+  //   relays = JSON.parse(event.content)
+  //   follows = event.tags
+  //     .filter(([t, v]) => t === 'p' && v)
+  //     .map(([_, v]) => v)
 
-    // update store state
-    store.commit('setFollows', follows)
-    store.commit('setRelays', relays)
-    setRelays(relays)
+  //   // update store state
+  //   store.commit('setFollows', follows)
+  //   store.commit('setRelays', relays)
 
-    await store.dispatch('addEvent', {event})
+  //   await store.dispatch('addEvent', {event})
 
-    Notify.create({
-      message: 'updated and published list of followed keys and relays.',
-      color: 'positive'
-    })
-    return event
-  } catch (error) {
-    Notify.create({
-      message: `could not publish updated list of followed keys and relays: ${error}`,
-      color: 'negative'
-    })
-    return
-  }
+  //   Notify.create({
+  //     message: 'updated and published list of followed keys and relays.',
+  //     color: 'positive'
+  //   })
+  //   return event
+  // } catch (error) {
+  //   Notify.create({
+  //     message: `could not publish updated list of followed keys and relays: ${error}`,
+  //     color: 'negative'
+  //   })
+  //   return
+  // }
 }
 
 export async function setMetadata(store, metadata) {
   if (metadata.created_at) delete metadata.created_at
-  try {
+  // try {
     let unpublishedEvent = {
       pubkey: store.state.keys.pub,
       created_at: Math.floor(Date.now() / 1000),
@@ -291,28 +219,29 @@ export async function setMetadata(store, metadata) {
       tags: [],
       content: JSON.stringify(metadata)
     }
-    let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
-    if (!publishResult) throw new Error('could not publish updated profile event')
-    store.dispatch('addEvent', {event})
-    store.dispatch('handleAddingProfileEventToCache', event)
+    return await store.dispatch('publishEvent', {unpublishedEvent})
+  //   let event = await signAsynchronously(unpublishedEvent, store)
+  //   let publishResult = await publish(event)
+  //   if (!publishResult) throw new Error('could not publish updated profile event')
+  //   store.dispatch('addEvent', {event})
+  //   store.dispatch('handleAddingProfileEventToCache', event)
 
-    Notify.create({
-      message: 'updated and published profile',
-      color: 'positive'
-    })
-    return event
-  } catch (error) {
-    Notify.create({
-      message: `could not publish updated profile: ${error}`,
-      color: 'negative'
-    })
-    return
-  }
+  //   Notify.create({
+  //     message: 'updated and published profile',
+  //     color: 'positive'
+  //   })
+  //   return event
+  // } catch (error) {
+  //   Notify.create({
+  //     message: `could not publish updated profile: ${error}`,
+  //     color: 'negative'
+  //   })
+  //   return
+  // }
 }
 
 export async function recommendRelay(store, url) {
-  try {
+  // try {
     let unpublishedEvent = {
       pubkey: store.state.keys.pub,
       created_at: Math.round(Date.now() / 1000),
@@ -320,36 +249,97 @@ export async function recommendRelay(store, url) {
       tags: [],
       content: url
     }
+    return await store.dispatch('publishEvent', {unpublishedEvent})
+  //   let event = await signAsynchronously(unpublishedEvent, store)
+  //   let publishResult = await publish(event)
+  //   if (!publishResult) throw new Error('could not publish recommend relay event')
+  //   store.dispatch('addEvent', {event})
+  //   return event
+  // } catch (error) {
+  //   Notify.create({
+  //     message: `could not publish recommend relay event: ${error}`,
+  //     color: 'negative'
+  //   })
+  //   return
+  // }
+}
+
+export async function publishEvent(store, {unpublishedEvent}) {
+  let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
+  let eventTypeWordy
+  switch (unpublishedEvent.kind) {
+    case 0:
+      eventTypeWordy = 'profile information'
+      break
+    case 1:
+      eventTypeWordy = 'note'
+      break
+    case 2:
+      eventTypeWordy = 'recommend relay'
+      break
+    case 3:
+      eventTypeWordy = 'follows and relay list'
+      break
+    case 4:
+      eventTypeWordy = 'dm'
+      break
+    default:
+      eventTypeWordy = `kind ${unpublishedEvent.kind}`
+  }
+  try {
     let event = await signAsynchronously(unpublishedEvent, store)
-    let publishResult = await publish(event)
-    if (!publishResult) throw new Error('could not publish recommend relay event')
-    store.dispatch('addEvent', {event})
+    let publishResult = await publish(event, relays)
+    if (!publishResult) throw new Error(`could not publish ${eventTypeWordy} event`)
+    await store.dispatch('addEvent', {event})
+    if (event.kind === 0) store.dispatch('handleAddingProfileEventToCache', event)
+    else if (event.kind === 3) {
+      let relays, follows
+      relays = JSON.parse(event.content)
+      follows = event.tags
+        .filter(([t, v]) => t === 'p' && v)
+        .map(([_, v]) => v)
+
+      // update store state
+      store.commit('setFollows', follows)
+      store.commit('setRelays', relays)
+    }
+    if ([0, 3].includes(event.kind)) {
+      Notify.create({
+        message: `published updated ${eventTypeWordy} event`,
+        color: 'positive'
+      })
+    }
     return event
   } catch (error) {
     Notify.create({
-      message: `could not publish recommend relay event: ${error}`,
+      message: `could not publish ${eventTypeWordy} event: ${error}`,
       color: 'negative'
     })
     return
   }
 }
 
-const debouncedStreamUserProfile = debounce(async (store, users) => {
-  if (!mainSub.streamUserProfile) {
-    mainSub.streamUserProfile = await streamUserProfile(
-      users.slice(0, 500),
-      async event => {
-        // if (event.pubkey in store.state.profilesCache) return
-        store.dispatch('handleAddingProfileEventToCache', event)
-        store.dispatch('cancelUseProfile', {pubkey: event.pubkey})
-      }
-    )
-  } else {
-    mainSub.streamUserProfile.update(users.slice(0, 500))
-  }
-}, 3000)
+const debouncedGetProfiles = debounce(async (store) => {
+  if (!gettingProfiles) getQueuedProfiles(store)
+}, 1000)
 
-let profilesInUse = {}
+async function getQueuedProfiles(store) {
+  if (profilesQueue.length) {
+    gettingProfiles = true
+    let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
+    let authors = profilesQueue.splice(0, 50)
+    while (authors && authors.length) {
+      let events = await getProfiles({authors, relays})
+      if (events) for (let event of events) store.dispatch('handleAddingProfileEventToCache', event)
+      authors = profilesQueue.splice(0, 50)
+    }
+    gettingProfiles = false
+  }
+}
+
+// let profilesInUse = {}
+let profilesQueue = []
+let gettingProfiles = false
 export async function useProfile(store, {pubkey}) {
   if (!helpersMixin.default.methods.isKey(pubkey)) return
   if (pubkey in store.state.profilesCache) {
@@ -360,27 +350,64 @@ export async function useProfile(store, {pubkey}) {
     }) // (just the pubkey is enough)
   } else {
     // fetch from db and add to cache
-    let event = await dbUserProfile(pubkey)
+    let event = await dbProfile(pubkey)
     if (event) {
-      let metadata = metadataFromEvent(event)
-      store.dispatch('useNip05', {metadata})
+      store.dispatch('handleAddingProfileEventToCache', event)
     } else {
-      profilesInUse[pubkey] = profilesInUse[pubkey] || { count: 0, since: Date.now() }
-      profilesInUse[pubkey].count++
-      for (let pubkey of Object.keys(profilesInUse)) {
-        if (profilesInUse[pubkey].since && profilesInUse[pubkey].since < Date.now() - (0.5 * 60 * 1000)) delete profilesInUse[pubkey]
-      }
-      if (profilesInUse[pubkey] && profilesInUse[pubkey].count === 1) debouncedStreamUserProfile(store, Object.keys(profilesInUse))
+      profilesQueue.push(pubkey)
+      debouncedGetProfiles(store)
     }
   }
 }
 
-export async function cancelUseProfile(store, {pubkey}) {
-  if (!profilesInUse[pubkey]) return
-  profilesInUse[pubkey].count--
-  if (profilesInUse[pubkey].count <= 0) {
-    delete profilesInUse[pubkey]
-    debouncedStreamUserProfile(store, Object.keys(profilesInUse))
+const debouncedGetEvents = debounce(async (store) => {
+  if (!gettingEvents) getQueuedEvents(store)
+}, 1000)
+
+async function getQueuedEvents(store) {
+  if (eventsQueue.length) {
+    gettingEvents = true
+    let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
+    let ids = eventsQueue.splice(0, 50)
+    while (ids && ids.length) {
+      let events = await getEvents({ids, relays})
+      if (events) for (let event of events) {
+        if (event.kind === 1 || event.kind === 2) helpersMixin.default.methods.interpolateEventMentions(event, store)
+        else if (event.kind === 4) {
+          event.text = await helpersMixin.default.methods.getPlaintext(event, store)
+          helpersMixin.default.methods.interpolateMessageMentions(event, store)
+        }
+        store.commit('addEventToCache', event)
+        store.dispatch('useProfile', { pubkey: event.pubkey })
+      }
+      ids = eventsQueue.splice(0, 50)
+    }
+    gettingEvents = false
+  }
+}
+
+let eventsQueue = []
+let gettingEvents = false
+export async function useEvent(store, {id}) {
+  if (!helpersMixin.default.methods.isKey(id)) return
+  if (id in store.state.eventsCache) {
+    // we don't fetch again, but we do commit this so the LRU gets updated
+    store.commit('addEventToCache', {...store.state.eventsCache[id]})
+  } else {
+    // fetch from db and add to cache
+    let event = await dbEvent(id)
+    if (event) {
+      if (event.kind === 1 || event.kind === 2) helpersMixin.default.methods.interpolateEventMentions(event, store)
+      else if (event.kind === 4) {
+        event.text = await helpersMixin.default.methods.getPlaintext(event, store)
+        helpersMixin.default.methods.interpolateMessageMentions(event, store)
+      }
+      store.commit('addEventToCache', event)
+      store.dispatch('useProfile', { pubkey: event.pubkey })
+    } else {
+      eventsQueue.push(id)
+      debouncedGetEvents(store)
+    }
   }
 }
 
@@ -392,11 +419,16 @@ export async function useNip05(store, {metadata}) {
     if (cached && cached.when > Date.now() / 1000 - 60 * 60) {
       if (cached.pubkey !== metadata.pubkey) delete metadata.nip05
     } else {
-      let checked = await queryName(metadata.nip05)
-      store.commit('addToNIP05VerificationCache', {
-        pubkey: checked,
-        identifier: metadata.nip05
-      })
+      let checked
+      try {
+        checked = await queryName(metadata.nip05)
+        store.commit('addToNIP05VerificationCache', {
+          pubkey: checked,
+          identifier: metadata.nip05
+        })
+      } catch (_) {
+        checked = ''
+      }
       if (metadata.pubkey !== checked) delete metadata.nip05
     }
   }
@@ -408,4 +440,19 @@ export async function handleAddingProfileEventToCache(store, event) {
   let metadata = metadataFromEvent(event)
   store.commit('addProfileToCache', metadata)
   store.dispatch('useNip05', {metadata})
+}
+
+async function queryName(fullname) {
+  try {
+    let [name, domain] = fullname.split('@')
+    if (!domain) return null
+
+    let res = await (
+      await fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
+    ).json()
+
+    return res.names && res.names[name]
+  } catch (_) {
+    return null
+  }
 }

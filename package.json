@@ -1,6 +1,6 @@
 {
   "name": "astral",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "decentralized social platform (nostr client)",
   "productName": "astral",
   "author": "monica <monlovesmango@users.noreply.github.com>",
@@ -33,7 +33,7 @@
     "markdown-it-task-lists": "2.1",
     "mergebounce": "^0.1.1",
     "nayuki-qr-code-generator": "^1.8.0",
-    "nostr-tools": "^0.24.1",
+    "nostr-tools": "1.1.1",
     "quasar": "^2.9.2",
     "readable-stream": "3.6.0",
     "sql.js": "^1.8.0",
@@ -42,7 +42,8 @@
     "vue-i18n": "^9.2.0-beta.40",
     "vue-router": "^4.0.0",
     "vuedraggable": "^4.1.0",
-    "vuex": "^4.0.2"
+    "vuex": "^4.0.2",
+    "websocket-polyfill": "^0.0.3"
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.13.14",
