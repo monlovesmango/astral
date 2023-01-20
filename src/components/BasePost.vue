@@ -64,7 +64,7 @@
         </div>
         <div class='q-pb-xs'>
           <q-item-label caption class="text-secondary" style='opacity: .7;'>
-              <span @click.stop="toProfile(event.pubkey)">{{ shorten(hexToBech32(event.pubkey, 'npub')) }}</span>
+              <a :href=getProfile(event.pubkey) style='color: currentColor; text-decoration: none;' @click.stop="toProfile(event.pubkey)">{{ shorten(hexToBech32(event.pubkey, 'npub')) }}</a>
           </q-item-label>
           <q-space/>
           <q-item-label :line='1' clickable>
@@ -80,7 +80,7 @@
             style='font-size: .9rem;'
           >
             <span >in reply to&nbsp;</span>
-            <a @click.stop="toEvent(tagged)">
+            <a :href=getNote(tagged) @click.stop="toEvent(tagged)">
               {{ shorten(hexToBech32(tagged, 'note')) }}
             </a>
           </q-item-label>
