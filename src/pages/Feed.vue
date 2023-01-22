@@ -6,9 +6,15 @@
       <BaseHeader :separator='false'>
         <div class='flex row justify-start items-center' style='gap: 1rem;'>
           <div>{{ $t('feed') }}</div>
-          <q-select borderless v-model="feedName" :options="['follows', 'global']" />
+          <q-select borderless v-model="feedName" :options="['follows', 'global', 'bots']" />
         </div>
       </BaseHeader>
+      <BaseButtonLoadMore
+        v-if='unreadFeed.length'
+        :loading-more='loadingUnread'
+        :label='"load " + unreadFeed.length + " unread"'
+        @click='loadUnread'
+      />
       <div
         v-for='(item, index) in items'
         :key='index'
@@ -65,8 +71,8 @@ import { defineComponent } from 'vue'
 import helpersMixin from '../utils/mixin'
 import {addToThread} from '../utils/threads'
 import {isValidEvent} from '../utils/event'
-import {getFeed} from '../query'
-// import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
+import {getFeed, dbFollows} from '../query'
+import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
 import { createMetaMixin } from 'quasar'
 
 const metaData = {
@@ -85,9 +91,9 @@ export default defineComponent({
   name: 'Feed',
   mixins: [helpersMixin, createMetaMixin(metaData)],
 
-  // components: {
-  //   BaseButtonLoadMore,
-  // },
+  components: {
+    BaseButtonLoadMore,
+  },
 
   watch: {
     feedName(curr, prev) {
@@ -128,9 +134,9 @@ export default defineComponent({
       //   bots: []
       // },
       feedSet: new Set(),
-      // bots: [],
+      bots: [],
       // follows: [],
-      // botTracker: '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952',
+      botTracker: '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952',
       loadingMore: true,
       loadingUnread: false,
       // tab: 'follows',
@@ -160,7 +166,6 @@ export default defineComponent({
     // if (this.follows.length === 0) {
     //   this.tab = 'global'
     // }
-
     if (this.$store.state.follows.length === 0) {
       this.feedName = 'global'
     }
@@ -200,8 +205,9 @@ export default defineComponent({
       // let lastThread = this.feed[feedName][this.feed[feedName].length - 1]
       // let until = lastThread ? lastThread[lastThread.length - 1].latest_created_at : Math.round(Date.now() / 1000)
       // let loadedFeed = []
-      let settings = { relays, until: this.until + (5 * 60), limit: 50 }
+      let settings = { relays, until: this.until + (5 * 60), limit: 100 }
       if (this.feedName === 'follows') settings.authors = this.$store.state.follows
+      else if (this.feedName === 'bots') settings.authors = this.bots
 
       let results = await getFeed(settings)
       if (results) for (let event of results) this.processEvent(event, loadedFeed)
@@ -218,6 +224,7 @@ export default defineComponent({
       // let results = await dbFeed(this.since)
       let settings = { relays, since: this.since, limit: 100 }
       if (this.feedName === 'follows') settings.authors = this.$store.state.follows
+      else if (this.feedName === 'bots') settings.authors = this.bots
       let results = await getFeed(settings)
       // let feed = this.feed.global.length ? this.unreadFeed : this.feed
       if (results) for (let event of results) this.processEvent(event)
@@ -225,6 +232,8 @@ export default defineComponent({
       //   this.feed[feed] = this.feed[feed].concat(feed[feed])
       // }
       this.since = Math.round(Date.now() / 1000)
+      if (!this.bots.length) this.bots = await this.getFollows(this.botTracker)
+
       if (this.loadingMore) this.loadingMore = false
     }, 10000)
     },
@@ -272,13 +281,14 @@ export default defineComponent({
       // else addToThread(feed.global, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
     },
 
-    // async getFollows(pubkey) {
-      // let event = await dbUserFollows(pubkey)
-      // if (!event) return []
-      // return event.tags
-      //   .filter(([t, v]) => t === 'p' && v)
-      //   .map(([_, v]) => v)
-    // },
+    async getFollows(pubkey) {
+      let events = await dbFollows(pubkey)
+      if (!events?.length) return []
+      let event = events[0]
+      return event.tags
+        .filter(([t, v]) => t === 'p' && v)
+        .map(([_, v]) => v)
+    },
 
     useProfile(pubkey) {
       // if (this.profilesUsed.has(pubkey)) return
@@ -288,7 +298,7 @@ export default defineComponent({
     },
 
     isBot(event) {
-      // if (this.bots.includes(event.pubkey)) return true
+      if (this.bots.includes(event.pubkey)) return true
       if (event.content.includes('https://www.minds.com/newsfeed/')) return true
       return false
     },

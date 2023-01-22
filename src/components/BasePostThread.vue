@@ -15,7 +15,7 @@
         :event="event"
         :position="position(index)"
         :reply-depth='replyDepth'
-        :reply-count='event.replies?.length ? event.replies.length : (index === filledEvents.length - 1 ? 0 : 1)'
+        :reply-count='event.replies?.length ? event.replies.length : (index === filledEvents.length - 1 ? (isAncestors ? 1 : 0) : 1)'
         @resized='resize'
         @add-event='addEvent'
         @click.stop="toEvent(event.id)"
