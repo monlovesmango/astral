@@ -1,14 +1,4 @@
 <template>
-  <q-dialog v-model="relayListDialog" @before-hide='$emit("hide")'>
-    <q-card>
-      <div class='flex row justify-end'>
-        <q-btn icon="close" flat dense v-close-popup/>
-      </div>
-      <div class='overflow-auto'>
-        <BaseRelayList v-for='(ev) in events' :key='ev.id' :event="ev" />
-      </div>
-    </q-card>
-  </q-dialog>
   <q-btn
     icon="sync_alt"
     unelevated
@@ -24,6 +14,16 @@
     <q-tooltip v-if='!verbose'>
       seen on relays
     </q-tooltip>
+  <q-dialog v-model="relayListDialog" @before-hide='$emit("hide")'>
+    <q-card>
+      <div class='flex row justify-end'>
+        <q-btn icon="close" flat dense v-close-popup/>
+      </div>
+      <div class='overflow-auto'>
+        <BaseRelayList v-for='(ev) in events' :key='ev.id' :event="ev" />
+      </div>
+    </q-card>
+  </q-dialog>
   </q-btn>
 </template>
 

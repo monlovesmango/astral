@@ -1,9 +1,8 @@
 import Tribute from 'tributejs'
-import {shorten} from './helpers'
+import {shorten, shortenList} from './helpers'
 // import { stringify } from 'JSON'
 import {date} from 'quasar'
-import { dbStreamEvent } from 'src/query'
-import {decrypt} from 'nostr-tools/nip04'
+import {nip04} from 'nostr-tools'
 // import { decode, encode } from 'bech32-buffer'
 import { bech32 } from 'bech32'
 import * as DOMPurify from 'dompurify'
@@ -53,15 +52,24 @@ export default {
       return console.log(o)
     },
 
+    getProfile(pubkey) {
+      return this.hexToBech32(pubkey, 'npub')
+    },
+
+    getNote(id) {
+      return this.hexToBech32(id, 'note')
+    },
+
     toProfile(pubkey) {
-      this.$router.push('/' + this.hexToBech32(pubkey, 'npub'))
+      this.$router.push('/' + this.getProfile(pubkey))
     },
 
     toEvent(id) {
-      this.$router.push('/' + this.hexToBech32(id, 'note'))
+      this.$router.push('/' + this.getNote(id))
     },
 
     shorten,
+    shortenList,
 
     // niceDate(value) {
     //   // if (value + 60 * 60 /* an hour */ > Date.now() / 1000) {
@@ -97,7 +105,7 @@ export default {
       return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')} ${this.$t('UTC')}`
     },
 
-    interpolateMentions(text, tags) {
+    interpolateMentions(text, tags, store) {
       const mentions = {
         profiles: [],
         replyEvents: [],
@@ -121,7 +129,7 @@ export default {
           return `[${shorten(this.hexToBech32(eventId, 'note'))}](/${this.hexToBech32(eventId, 'note')})`
         } else if (tags[Number(index)][0] === 'p') {
           const profile = tags[Number(index)][1]
-          const displayName = this.$store.getters.displayName(profile)
+          const displayName = store.getters.displayName(profile)
           return `[${displayName}](/${this.hexToBech32(profile, 'npub')})`
         }
       }
@@ -129,7 +137,7 @@ export default {
         return `${startWhitespace}[${match}](/hashtag/${hashtag})`
       }
       const untaggedProfileReplacer = (match, profile) => {
-        const displayName = this.$store.getters.displayName(profile)
+        const displayName = store.getters.displayName(profile)
         return `[@${displayName}](/${profile})`
       }
 
@@ -166,17 +174,17 @@ export default {
       }
     },
 
-    interpolateEventMentions(events) {
+    interpolateEventMentions(events, store = this.$store) {
       if (!Array.isArray(events)) events = [events]
       events.forEach((event) => {
-        if (!event.interpolated) event.interpolated = this.interpolateMentions(event.content, event.tags || [])
+        if (!event.interpolated) event.interpolated = this.interpolateMentions(event.content, event.tags || [], store)
       })
     },
 
-    interpolateMessageMentions(events) {
+    interpolateMessageMentions(events, store = this.$store) {
       if (!Array.isArray(events)) events = [events]
       events.forEach((event) => {
-        if (!event.interpolated) event.interpolated = this.interpolateMentions(event.text, event.tags)
+        if (!event.interpolated) event.interpolated = this.interpolateMentions(event.text, event.tags, store)
       })
     },
 
@@ -236,34 +244,34 @@ export default {
       if (!Array.isArray(events)) throw new Error('no array supplied')
       ids.splice(10)
       // this.subTaggedEvents(tagged, event.taggedEvents)
-      let eventSubs = {}
-      for (let id of ids) {
-        eventSubs[id] = await dbStreamEvent(id, async ev => {
-          // ev = JSON.parse(ev)
-          this.$store.dispatch('useProfile', { pubkey: ev.pubkey })
-          if (ev.kind === 1 || ev.kind === 2) this.interpolateEventMentions(ev)
-          else if (ev.kind === 4) {
-            ev.text = await this.getPlaintext(ev)
-            this.interpolateMessageMentions(ev)
-          }
-          if (Array.isArray(events)) events.push(ev)
-          else console.log('processTaggedEvents events not array', ids, ev, events)
-          // event.taggedEvents.push(ev)
-          eventSubs[id].cancel()
-        })
-      }
+      // let eventSubs = {}
+      for (let id of ids) this.$store.dispatch('useEvent', { id })
+      //   eventSubs[id] = await dbStreamEvent(id, async ev => {
+      //     // ev = JSON.parse(ev)
+      //     this.$store.dispatch('useProfile', { pubkey: ev.pubkey })
+      //     if (ev.kind === 1 || ev.kind === 2) this.interpolateEventMentions(ev)
+      //     else if (ev.kind === 4) {
+      //       ev.text = await this.getPlaintext(ev)
+      //       this.interpolateMessageMentions(ev)
+      //     }
+      //     if (Array.isArray(events)) events.push(ev)
+      //     else console.log('processTaggedEvents events not array', ids, ev, events)
+      //     // event.taggedEvents.push(ev)
+      //     eventSubs[id].cancel()
+      //   })
+      // }
     },
 
-    async getPlaintext(event) {
+    async getPlaintext(event, store = this.$store) {
       if (
         event.tags.find(
-          ([tag, value]) => tag === 'p' && value === this.$store.state.keys.pub
+          ([tag, value]) => tag === 'p' && value === store.state.keys.pub
         )
       ) {
         // it is addressed to us
         // decrypt it
-        return await this.decrypt(event.pubkey, event.content)
-      } else if (event.pubkey === this.$store.state.keys.pub) {
+        return await this.decrypt(event.pubkey, event.content, store)
+      } else if (event.pubkey === store.state.keys.pub) {
         // it is coming from us
         let [_, target] = event.tags.find(([tag]) => tag === 'p')
         // decrypt it
@@ -271,12 +279,12 @@ export default {
       }
     },
 
-    async decrypt(peer, ciphertext) {
+    async decrypt(peer, ciphertext, store = this.$store) {
       try {
-        if (this.$store.state.keys.priv) {
-          return decrypt(this.$store.state.keys.priv, peer, ciphertext)
+        if (store.state.keys.priv) {
+          return nip04.decrypt(store.state.keys.priv, peer, ciphertext)
         } else if (
-          (await window?.nostr?.getPublicKey?.()) === this.$store.state.keys.pub
+          (await window?.nostr?.getPublicKey?.()) === store.state.keys.pub
         ) {
           return await window.nostr.nip04.decrypt(peer, ciphertext)
         } else {
@@ -297,7 +305,7 @@ export default {
       if (typeof key !== 'string') return false
       try {
         let { prefix } = bech32.decode(key.toLowerCase())
-        if (!['npub', 'nsec'].includes(prefix)) return false
+        if (!['npub', 'nsec', 'note'].includes(prefix)) return false
         if (prefix === 'npub') this.watchOnly = true
         if (prefix === 'nsec') this.watchOnly = false
         return this.isKey(this.bech32ToHex(key))

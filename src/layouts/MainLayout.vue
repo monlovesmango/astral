@@ -50,8 +50,6 @@
       </div>
     </div>
     <q-page-sticky v-if='($q.screen.width < 600)' @click.stop='resizePostEntryPlaceholder' id='bottom-drawer' position="bottom" class='z-top xs lt-sm'>
-      <!-- <q-separator color='primary'/> -->
-      <!-- <div  v-if='postEntryOpen || messageMode' id='bottom-post-entry' unelevated class='flex column align-self relative-position'> -->
       <div  v-if='messageMode' id='bottom-message-entry' unelevated class='flex column align-self relative-position q-px-md'>
         <BasePostEntry
           :event='replyEvent'
@@ -64,7 +62,6 @@
       </div>
       <div v-if='messageMode' id='bottom-post-entry-top-border'></div>
       <div v-if='postEntryOpen' id='bottom-post-entry' unelevated class='flex column align-self relative-position q-px-md'>
-        <!-- <q-btn v-if='!messageMode' icon="close" flat dense @click='togglePostEntry' class='self-end' style='position: absolute; top: 0; right: 0; z-index: 1;'/> -->
         <BasePostEntry
           @sent='togglePostEntry'
           @resized='resizePostEntryPlaceholder'
@@ -137,6 +134,8 @@
         >
           <q-tooltip>back</q-tooltip>
         </q-btn>
+      <!-- <q-btn label='get relay status' @click='getRelayStat'/>s -->
+
       </q-fab>
     </q-page-sticky>
   </q-layout>
@@ -146,11 +145,11 @@
 import { defineComponent} from 'vue'
 import { scroll, useQuasar } from 'quasar'
 const { getVerticalScrollPosition, setVerticalScrollPosition} = scroll
-// import { activateSub, deactivateSub } from '../query'
 import TheUserMenu from 'components/TheUserMenu.vue'
 import TheSearchMenu from 'components/TheSearchMenu.vue'
 import TheKeyInitializationDialog from 'components/TheKeyInitializationDialog.vue'
 import { setCssVar } from 'quasar'
+import {getRelayStatus} from '../query'
 
 export default defineComponent({
   name: 'MainLayout',
@@ -401,7 +400,11 @@ export default defineComponent({
         // User denied permission or cancelled
         console.log(error)
       }
-    }
+    },
+    async getRelayStat() {
+      let stat = await getRelayStatus()
+      console.log('relayStatus', stat)
+    },
   },
 })
 
@@ -439,8 +442,10 @@ body {
   max-width: 100%;
   height: auto;
   padding-bottom: 2rem;
+  /*
   border-right: 1px solid var(--q-accent);
   border-left: 1px solid var(--q-accent);
+  */
   display: flex;
   flex-direction: column;
 }

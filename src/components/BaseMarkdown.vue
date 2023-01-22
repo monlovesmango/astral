@@ -1,22 +1,24 @@
 <template>
-  <div ref="src" class="hidden break-word-wrap"><slot /></div>
-  <div ref="append" class="hidden break-word-wrap"><slot name="append" /></div>
-  <div v-html="html" ref="html" class="break-word-wrap dynamic-content" @click='handleClicks' :class='longForm ? "long-form" : ""'/>
-  <q-btn
-    v-if='longForm'
-    id='long-form-button'
-    dense
-    outline
-    rounded
-    color="accent"
-    class='text-weight-light q-ma-sm justify-between'
-    style='letter-spacing: .1rem; justify-content: space-between;'
-    label='show full post'
-    @click.stop="expand"
-  />
-  <div v-if='invoices.length'>
-  <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='lt-sm' style='padding: 1rem;'/>
-  <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='gt-xs' row-or-column='row' style='padding: 1rem;'/>
+  <div>
+    <div ref="src" class="hidden break-word-wrap"><slot /></div>
+    <div ref="append" class="hidden break-word-wrap"><slot name="append" /></div>
+    <div v-html="html" ref="html" class="break-word-wrap dynamic-content" @click='handleClicks' :class='longForm ? "long-form" : ""'/>
+    <q-btn
+      v-if='longForm'
+      id='long-form-button'
+      dense
+      outline
+      rounded
+      color="accent"
+      class='text-weight-light q-ma-sm justify-between full-width'
+      style='letter-spacing: .1rem; justify-content: space-between;'
+      label='show full post'
+      @click.stop="expand"
+    />
+    <div v-if='invoices.length'>
+      <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='lt-sm' style='padding: 1rem;'/>
+      <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='gt-xs' row-or-column='row' style='padding: 1rem;'/>
+    </div>
   </div>
   <!-- <div v-if='links.length'>
     <BaseLinkPreview v-for='(link, idx) of links' :key='idx' :url='link' />
@@ -118,7 +120,7 @@ md.use(subscript)
       // }
       // console.log('twitterMatch', twitterMatch)
 
-      var ytRegex = /\bhttps:\/\/(www.|m.)?youtu(be.com|.be)\/(watch\?v=|shorts\/)?(?<v>[a-zA-Z0-9_-]{11})(&t=(?<s>[0-9]+)s)?/
+      var ytRegex = /\bhttps:\/\/(www.|m.|music.)?youtu(be.com|.be)\/(watch\?v=|shorts\/)?(?<v>[a-zA-Z0-9_-]{11})(&t=(?<s>[0-9]+)s)?/
       let ytMatch = token.attrs[aIndexHref][1].match(ytRegex)
       // console.log('ytMatch', ytMatch, token.attrs[aIndexHref][1])
       if (ytMatch) {
@@ -126,7 +128,7 @@ md.use(subscript)
         if (ytMatch.groups.s) src = src + `?start=${ytMatch.groups.s}`
         // src = src + `&origin=http://localhost:8080/`
       // console.log('ytMatch', src)
-        return `<iframe anonymous async style="height: 15rem; width: 90%; object-fit: cover;" src="${src}"
+        return `<iframe anonymous async style="height: 15rem; width: 90%; object-fit: cover;" src="${src}" loading='lazy'
           title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen>
           </iframe>`
       }

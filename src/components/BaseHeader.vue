@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="text-h5 text-bold q-pt-md q-pb-sm q-px-sm"><slot /></div>
-    <q-separator v-if='separator' color='accent' size='1px'/>
+    <!-- <q-separator v-if='separator' color='accent' size='1px'/> -->
   </div>
 </template>
 

@@ -1,10 +1,18 @@
-import {dbUserProfile, dbEvent} from '../query'
+import {dbProfile, dbEvent} from '../query'
 
 export function shorten(str, number = 5) {
   if (!str) return ''
   let prefix = str.slice(0, 4)
   if (['npub', 'nsec', 'note'].includes(prefix)) return str.slice(0, number + prefix.length) + '…' + str.slice(-(number))
   return str ? str.slice(0, number) + '…' + str.slice(-(number)) : ''
+}
+
+export function shortenList(list, number = 3) {
+  if (!Array.isArray(list) || !list.length) return ''
+  let length = list.length
+  if (length === 1) return list[0]
+  else if (length <= number) return `${JSON.stringify(...list.slice(0, length - 2))} and ${list[length - 1]}`
+  else return `${JSON.stringify(...list.slice(0, number - 1))} and ${length - number} others`
 }
 
 export function getElementFullHeight(element) {
@@ -99,7 +107,7 @@ export async function processMentions(event) {
 
 export async function getPubKeyTagWithRelay(pubkey) {
   var base = ['p', pubkey]
-  let event = await dbUserProfile(pubkey)
+  let event = await dbProfile(pubkey)
   if (event && event.seen_on && event.seen_on.length) {
     let random = event.seen_on[Math.floor(Math.random() * event.seen_on.length)]
     base.push(random)

@@ -1,345 +1,401 @@
-import mergebounce from 'mergebounce'
-import { relayPool } from 'nostr-tools'
+import { relayInit } from 'nostr-tools'
+import { matchFilter } from 'nostr-tools'
 // import {debounce} from 'quasar'
+import 'websocket-polyfill'
 
-export const pool = relayPool()
-// let mainUserSub = null
-// let adhocSub = null
-let poolSubs = {}
+const relays = {}
+let dbReady = false
+let dbWorker = null
+let intakeQueue = []
+let intakeBusy = false
 
-let relays = {}
-let subs = {}
-let active = true
-// let lastSync = 0
+function run() {
+  // pool = relayPool()
+  self.onmessage = handleMessage
+}
 
-let dbWorkerPort = null
+run()
 
-pool.onNotice((notice, relay) => {
-  try {
-    dbWorkerPort.postMessage({type: 'notice', notice, relay: relay.url})
-  } catch (e) {
-    console.log('error posting message to db from pool', e, 'notice', notice, 'url ', relay.url)
-  }
-})
+function handleMessage({ data, ports }) {
+  let { action, ticket } = typeof data === 'string' ? JSON.parse(data) : data
+  if (!action) return
 
-let debounceCount = 0
-// let debounceTime = Date.now()
-// let debouncedEvents = []
-// function emitEvents(events) {
-//   dbWorkerPort.postMessage({ type: 'events', events })
-//   debouncedEvents = []
-// }
-// const debouncedEmitEvents = debounce(emitEvents, 1000)
-
-let debouncedEmitEvent = mergebounce(
-  events => dbWorkerPort.postMessage({ type: 'events', events }),
-  700,
-  { 'concatArrays': true, 'promise': true, maxWait: 2000 }
-)
-
-function onEvent(event, relay) {
-    if (!active) return
-    // debouncedEvents.push({ event, relay })
-    // if (debounceCount >= 2000 || Date.now() - debounceTime > 2000) emitEvents(debouncedEvents)
-    // debouncedEmitEvents(debouncedEvents)
-    if (debounceCount >= 2000) {
-      debouncedEmitEvent.flush()
-      debounceCount = 0
+  switch (action) {
+    case 'setPort':
+      dbWorker = ports[0]
+      dbWorker.onmessage = handleDbMessage
+      return
+    case 'submit': {
+      if (ticket.type === 'status') {
+        let status = getRelayStatus()
+        ticket.results = status
+        ticket.success = true
+        console.log('get relay status', ticket, status)
+        self.postMessage({ action: 'complete', ticket})
+        return
+      }
+      intakeQueue.push(ticket)
+      if (!intakeBusy) startIntake()
+      // console.log('ticket-relay', ticket)
+      return
     }
-    debouncedEmitEvent([{ event, relay }])
-    debounceCount++
-}
-
-function onEose(url) {
-  // console.log('EOSE', url)
-}
-
-function calcFilter(subName) {
-  let compiledSubs = Object.values(subs)
-    .filter(sub => subName === (sub.subName || 'adhoc'))
-    // .map(([_, sub]) => sub)
-    .reduce((acc, { type, value }) => {
-      if (type === 'user') {
-        acc[type] = [value]
-        return acc
-      } else if (type === 'feed') {
-        if (!acc[type] || acc[type] >= value) acc[type] = value
-        return acc
-      } else if (type === 'tag') {
-        let tagType = value.tagType
-        let tagValues = value.tagValues
-        acc[`#${tagType}`] = (acc[`#${tagType}`] || []).concat(tagValues)
-        return acc
-      }
-      acc[type] = (acc[type] || []).concat(value)
-      return acc
-    }, {})
-  let filter = Object.entries(compiledSubs)
-    .map(([type, value]) => {
-      switch (type) {
-        case 'user':
-          return {
-            authors: value,
-            kinds: [0, 1, 2, 3, 4]
-          }
-        case 'userNotes':
-          return {
-            authors: value,
-            kinds: [1],
-            limit: 5000
-          }
-        case 'userProfile':
-          return {
-            authors: value,
-            kinds: [0]
-          }
-        case 'userFollows':
-          return {
-            authors: value,
-            kinds: [3]
-          }
-        case 'userFollowers':
-          return {
-            '#p': value,
-            kinds: [3]
-          }
-        case 'userTags':
-          return {
-            '#p': value,
-            kinds: [1, 3, 4],
-            limit: 5000
-          }
-        case 'userMessages':
-          return {
-            authors: value,
-            kinds: [4],
-            limit: 5000
-          }
-        case 'feed':
-          return {
-            since: value,
-            kinds: [1, 2],
-            limit: 5000
-          }
-        case 'event':
-          return {
-            ids: value
-          }
-        default:
-          return {
-            [type]: value,
-            kinds: [0, 1, 2, 3, 4]
-          }
-      }
-    })
-  console.log('filter', subName, filter)
-  return filter
-}
-
-function cancelSub(id) {
-  let cancelledSub = subs[id]
-  delete subs[id]
-  if (!active) return
-  if (!cancelledSub.subName) cancelledSub.subName = 'adhoc'
-  if (poolSubs[cancelledSub.subName]) {
-    if (Object.keys(subs).filter(id => cancelledSub.subName === (subs[id].subName || 'adhoc')).length === 0) poolSubs[cancelledSub.subName].unsub()
-    else poolSubs[cancelledSub.subName].sub({filter: calcFilter(cancelledSub.subName)})
   }
-  // if (cancelledSub.subName === 'mainUser') {
-  //   if (mainUserSub) {
-  //     if (Object.keys(subs).filter(id => cancelledSub.subName === 'mainUser').length === 0) mainUserSub.unsub()
-  //     else mainUserSub.sub({filter: calcFilter('mainUser')})
-  //   }
-  // } else {
-  //   if (adhocSub) {
-  //     if (Object.keys(subs).filter(id => !cancelledSub.subName).length === 0) adhocSub.unsub()
-  //     else adhocSub.sub({filter: calcFilter()})
-  //   }
+}
+
+async function startIntake() {
+  if (intakeBusy === true) return
+  intakeBusy = true
+  let ticket = intakeQueue.shift()
+  while (ticket) {
+    await processTicket(ticket)
+    ticket = intakeQueue.shift()
+  }
+  intakeBusy = false
+}
+
+let dbTicketQueue = {}
+
+function handleDbMessage({ data }) {
+  // console.log('handleDbMessage', data)
+  let { status } = data
+  if (status === 'ready') {
+    if (Object.keys(dbTicketQueue).length) advanceTicketsToDb()
+    else dbReady = 'true'
+  } else dbReady = 'false'
+}
+
+function advanceTicketsToDb() {
+  let tickets = JSON.parse(JSON.stringify(Object.values(dbTicketQueue).filter(ticket => ticket.relayWork.eventsToSave.length)))
+  Object.values(dbTicketQueue).filter(ticket => ['stream', 'update'].includes(ticket.type)).forEach(ticket => ticket.relayWork.eventsToSave = [])
+  dbWorker.postMessage({ tickets })
+  dbTicketQueue = {}
+  // let tickets = JSON.parse(JSON.stringify(Object.values(dbTicketQueue).filter(ticket => Object.keys(ticket.relayWork.eventsToSave).length)))
+  // dbWorker.postMessage({ tickets })
+  // Object.values(dbTicketQueue).filter(ticket => ['stream', 'update'].includes(ticket.type)).forEach(ticket => ticket.relayWork.eventsToSave = {})
+  // dbTicketQueue = {}
+}
+
+function checkTicketForCompletion(ticket) {
+  // // if all relays have returned eose
+  // let relaysAwaitingEose = ticket.relayWork.relays.filter(url => {
+  //   let relayStatus = getRelayStatus()
+  //   if (!relayStatus[url] || !relayStatus[url].connected) return false
+  //   if (Object.keys(ticket.eose).includes(url)) return false
+  //   return true
+  // })
+  // if (relaysAwaitingEose.length === 0) {
+  // console.log('relays', ticket, getRelayStatus(), dbReady)
+  // if (ticket.id.startsWith('dbStreamTagKin')) console.log('dbStreamTagKind ticket checking ', ticket, JSON.parse(JSON.stringify(ticket.relayWork.eventsToSave)), dbTicketQueue)
+  if (!ticket.eose) return
+  if (Object.keys(ticket.eose).length < 3 && ticket.type === 'call') return
+  // if ((!ticket.eose || Object.keys(ticket.eose).length < 3) && ticket.type === 'call') return
+    if (!dbTicketQueue[ticket.id]) dbTicketQueue[ticket.id] = ticket
+    if (dbReady) advanceTicketsToDb()
+    if (ticket.type === 'call') cancelTicket(ticket)
   // }
 }
 
-const methods = {
-  close() {
-    self.close()
-    return
-  },
+// function relayPool() {
+  /*
+  SELECT * FROM nostr_events
+where id = '5750fff21769fdf86928d0be04e7a3be522f01bfe4085630d42464b5afd313fb';
+-- SELECT * FROM nostr_users;
+  */
 
-  activateSub() {
-    active = true
-    Object.keys(poolSubs).forEach(subName => poolSubs[subName].sub({filter: calcFilter(subName)}))
-    // if (mainUserSub && Object.keys(subs).filter(id => subs[id].subName === 'mainUser').length) mainUserSub.sub({filter: calcFilter('mainUser')})
-    // if (adhocSub && Object.keys(subs).filter(id => !subs[id].subName).length) adhocSub.sub({filter: calcFilter()})
-    return
-  },
-
-  deactivateSub() {
-    active = false
-    Object.keys(poolSubs).forEach(subName => poolSubs[subName].unsub())
-    // if (mainUserSub) mainUserSub.unsub()
-    // if (adhocSub) adhocSub.unsub()
-    // emitEvents(debouncedEvents)
-    debouncedEmitEvent.flush()
-    return
-  },
-
-  subUser(pubkey) {
-    return {
-      type: 'user',
-      value: pubkey,
-      subName: 'mainUser'
-    }
-  },
-
-  subUserNotes(pubkey) {
-    return {
-      type: 'userNotes',
-      value: pubkey
-    }
-  },
-
-  subUserProfile(pubkeys) {
-    // let pubkeys = Array.isArray(pubkey) ? pubkey : [pubkey]
-    return {
-      type: 'userProfile',
-      value: pubkeys
-    }
-  },
-
-  subUserFollows(pubkeys) {
-    // let pubkeys = Array.isArray(pubkey) ? pubkey : [pubkey]
-    return {
-      type: 'userFollows',
-      value: pubkeys
-    }
-  },
-
-  subUserFollowers(pubkeys) {
-    // let pubkeys = Array.isArray(pubkey) ? pubkey : [pubkey]
-    return {
-      type: 'userFollowers',
-      value: pubkeys
-    }
-  },
-
-  subUserTags(pubkeys) {
-    // let pubkeys = Array.isArray(pubkey) ? pubkey : [pubkey]
-    return {
-      type: 'userTags',
-      value: pubkeys,
-      subName: 'mainUser'
-    }
-  },
-
-  // subUserMessages(pubkey) {
-  //   // let pubkeys = Array.isArray(pubkey) ? pubkey : [pubkey]
-  //   return {
-  //     type: 'userMessages',
-  //     value: pubkeys
-  //   }
-  // },
-
-  subTag(type, value) {
-    let values = Array.isArray(value) ? value : [value]
-    return {
-      type: 'tag',
-      value: {
-        tagType: type,
-        tagValues: values
-      }
-    }
-  },
-
-  subFeed(since) {
-    return {
-      type: 'feed',
-      value: Math.max(since, 0),
-      subName: 'mainFeed'
-    }
-  },
-
-  subEvent(id) {
-    let ids = Array.isArray(id) ? id : [id]
-    return {
-      type: 'event',
-      value: ids
-    }
-  },
-
-  setRelays(newRelays) {
-    // lastSync = Math.max(userLastSync, 0)
-    for (let url in newRelays) {
-      if (!relays[url]) pool.addRelay(url, newRelays[url])
-      else if (relays[url].read !== newRelays[url].read || relays[url].write !== newRelays[url].write) {
-        pool.removeRelay(url)
-        pool.addRelay(url, newRelays[url])
-        console.log(url, newRelays[url])
-      }
-    }
-    for (let url in relays) {
-      if (!newRelays[url]) pool.removeRelay(url)
-      if (!newRelays[url]) console.log('removing relay', url)
-    }
-    relays = newRelays
-    return relays
-  },
-
-  setPrivateKey(privkey) {
-    pool.setPrivateKey(privkey)
-    return true
-  },
-
-  publish(event, relayURL) {
-    if (relayURL) pool.relays[relayURL]?.relay?.publish?.(event)
-    else pool.publish(event, (status, url) => {
-      if (status === 0) {
-        console.log(`publish request sent to ${url}`)
-      }
-      if (status === 1) {
-        console.log(`event published by ${url}`, event)
-      }
-    })
-    return event
-  }
-}
-
-self.onmessage = handleMessage
-
-function handleMessage(ev) {
-  let { name, args, id, cancel, sub } = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data
-  if (ev.ports.length && name === 'setPort') {
-    dbWorkerPort = ev.ports[0]
-    return
-  } else if (ev.data.type) return
-
-  if (cancel) {
-    cancelSub(id)
-  } else if (sub) {
-    subs[id] = methods[name](...args)
-    if (!active) return
-    let subName = subs[id].subName || 'adhoc'
-    if (poolSubs[subName]) poolSubs[subName].sub({filter: calcFilter(subName)})
-    else {
-      let subNameId = subName + ' ' + Math.random().toString().slice(-4)
-      poolSubs[subName] = pool.sub({ cb: onEvent, filter: calcFilter(subName)}, subNameId, onEose)
-    }
-    // if (subs[id].subName === 'mainUser') {
-    //   if (mainUserSub) mainUserSub.sub({filter: calcFilter('mainUser')})
-    //   else mainUserSub = pool.sub({ cb: onEvent, filter: calcFilter('mainUser')}, 'mainUser', onEose)
-    // } else {
-    //   if (adhocSub) adhocSub.sub({filter: calcFilter()})
-    //   else adhocSub = pool.sub({ cb: onEvent, filter: calcFilter()}, 'adhoc', onEose)
+  async function processTicket(ticket) {
+    // if (!ticket.dbWork) ticket.dbWork = { eventsToSave: [] }
+    // console.log('process ticket', ticket)
+    if (!ticket.relayWork.eventsToSave) ticket.relayWork.eventsToSave = []
+    ticket.relayWork.subName = ticket.relayWork.subName || 'adhoc'
+    // let unconnectedUrls = ticket.relayWork.relays.filter(url => !relays[url])
+    // await Promise.allSettled(unconnectedUrls.map(url => relayHandler(url).then(handler => relays[url] = handler)))
+    // for (let url of unconnectedUrls) {
+    //   if (!relays[url]) relays[url] = await relayHandler(url)
     // }
-  } else {
-    var reply = { id }
-    let data
-    try {
-      data = methods[name](...args)
-      reply.success = true
-      reply.data = data
-    } catch (err) {
-      reply.success = false
-      reply.error = err.message
+    ticket.relayWork.relays.forEach(async (url) => {
+      if (!relays[url]) relays[url] = await relayHandler(url)
+      relays[url].processTicket(ticket)
+    })
+  }
+
+  function cancelTicket(ticket) {
+    ticket.type = 'cancel'
+    // console.log('cancelticket', relays, getRelayStatus(), ticket)
+    for (let url in ticket.relayWork.relays) if (relays[url]) relays[url].processTicket(ticket)
+  }
+
+  // return {
+  //   processTicket,
+    function getRelayStatus() {
+      let status = {}
+      for (let url in relays) {
+        status[url] = relays[url].status()
+      }
+      return status
     }
-    self.postMessage(JSON.stringify(reply))
+//   }
+// }
+
+async function relayHandler(url) {
+  let subControl = {
+    main: { queue: [], mode: 'stream' },
+    feed: { queue: [], mode: 'call' },
+    page: { queue: [], mode: 'stream' },
+    profiles: { queue: [], mode: 'call' },
+    events: { queue: [], mode: 'call' },
+    adhoc: { queue: [], mode: 'call' },
+  }
+  let status = 'unconnected'
+  let idSuffix = ' ' + Math.random().toString().slice(-4)
+  // let connected = false
+  // let connecting = false
+  let hasEose = false
+  const relay = relayInit(url)
+  relay.on('connect', () => {
+    console.log(`connected to ${url}`)
+    status = 'connected'
+    Object.keys(subControl).forEach(subName => startSub(subName))
+  })
+  relay.on('disconnect', () => {
+    console.log(`disconnected from ${url}`)
+    status = 'disconnected'
+  })
+  relay.on('notice', (notice) => {
+    console.log(`notice from ${url}: ${notice}`)
+  })
+  relay.on('error', () => {
+    console.log(`error on connection to ${url}`)
+    status = 'error'
+  })
+
+  function getNextTicket(subName) {
+    return subControl[subName].queue.shift() || null
+  }
+
+  function getSubFilter(subName) {
+    let { ticket, queue } = subControl[subName]
+    if (ticket) {
+      let { filter } = ticket.relayWork
+      return [filter]
+    } else if (queue && queue.length) {
+      let filters = queue.map(ticket => {
+        // let since = ticket.eose[url]
+        let { filter } = ticket.relayWork
+        // if (hasEose) filter.since = since
+        // console.log('startStreamTickets', url, filter, since)
+        // if (!filter.limit) filter.limit = 200
+        return filter
+      })
+      return filters
+    } else return []
+  }
+
+  async function connect() {
+    try {
+      status = 'connecting'
+      await relay.connect()
+    } catch (error) {
+      // console.log('error connecting to ', url, error)
+    }
+  }
+
+  function startSub(subName) {
+    if (!subControl[subName].queue?.length) return
+    let filter = getSubFilter(subName)
+    let sub = relay.sub(filter, {id: subName + idSuffix})
+    sub.on('event', (event) => handleEvent(event, subName))
+    sub.on('eose', () => handleEose(subName))
+    subControl[subName].sub = sub
+    subControl[subName].filter = filter
+    subControl[subName].active = true
+    if (subControl[subName].mode === 'stream') startStreamTickets(subName, true)
+    else if (subControl[subName].mode === 'call') startNextTicket(subName, true)
+  }
+
+  function closeSub(subName) {
+    if (subControl[subName].sub) subControl[subName].sub.unsub()
+    delete subControl[subName].sub
+    subControl[subName].active = false
+    subControl[subName].ticket = null
+    subControl[subName].filter = null
+  }
+
+  function startNextTicket(subName, subStarted = false) {
+    let ticket = getNextTicket(subName)
+    if (!ticket) closeSub(subName)
+    else {
+      subControl[subName].ticket = ticket
+      let filter = getSubFilter(subName)
+      // let { filter } = ticket.relayWork
+      if (!subStarted && filter !== subControl[subName].filter) subControl[subName].sub.sub(filter)
+      subControl[subName].filter = filter
+      // subControl[subName].mode = 'query'
+      subControl[subName].timeout = setTimeout(() => handleEose(subName, true), 5000)
+    }
+  }
+
+  function startStreamTickets(subName, subStarted = false) {
+    let tickets = subControl[subName].queue
+    if (tickets && tickets.length) {
+      subControl[subName].ticket = null
+      let filter = getSubFilter(subName)
+      if (!subStarted && filter !== subControl[subName].filter) subControl[subName].sub.sub(filter)
+      subControl[subName].filter = filter
+      // if (!subStarted) subControl[subName].sub.sub(getSubFilter(subName))
+    // or close sub
+    } else {
+      closeSub(subName)
+    }
+  }
+
+  function completeTicket(ticket, time = Math.round(Date.now() / 1000)) {
+    // mark ticket with eose time for this relay and check if ticket is complete
+    ticket.eose = ticket.eose || {}
+    ticket.eose[url] = time
+    if (time > 0 && ticket.type !== 'cancel') checkTicketForCompletion(ticket)
+
+    // figure out what to sub next
+    let { subName } = ticket.relayWork
+
+    // move onto next ticket
+    startNextTicket(subName)
+  }
+
+  function handleEvent(event, subName) {
+    // console.log('handleEvent', queue, subName, event)
+    let { mode, ticket, timeout, queue } = subControl[subName]
+    // if (subName === 'main') console.log('handleEvent for main', event, subControl[subName])
+    if (mode === 'call') {
+      addEventToTicket(event, ticket)
+      if (!hasEose) {
+        if (timeout) clearTimeout(timeout)
+        subControl[subName].timeout = setTimeout(() => handleEose(subName, true), 2000)
+      }
+    } else if (mode === 'stream') {
+      let tickets = queue
+      tickets.forEach(ticket => {
+        if (matchFilter(ticket.relayWork.filter, event)) {
+          addEventToTicket(event, ticket)
+          checkTicketForCompletion(ticket)
+        }
+      })
+    }
+  }
+
+  function handleEose(subName, manual = false) {
+    // if (subName === 'main') console.log('handleEose for main', subControl[subName])
+    if (!hasEose && !manual) {
+      hasEose = true
+      clearTimeout(subControl[subName].timeout)
+      delete subControl[subName].timeout
+    }
+    let { mode, ticket, queue } = subControl[subName]
+    // console.log('handleEose', queue, subName, ticket)
+    if (mode === 'call') {
+      if (!ticket) return
+      completeTicket(ticket, manual ? 0 : Math.round(Date.now() / 1000))
+      if (!manual && ticket.relayWork.eose) self.postMessage({ ticket: { id: ticket.id, eose: ticket.eose, success: true }})
+    } else if (mode === 'stream') {
+      let tickets = queue
+      tickets.forEach(ticket => {
+        ticket.eose = ticket.eose || {}
+        ticket.eose[url] = Math.round(Date.now() / 1000)
+        if (!manual && ticket.relayWork.eose) self.postMessage({ ticket: { id: ticket.id, eose: ticket.eose, success: true }})
+      })
+    }
+  }
+
+  function addEventToTicket(event, ticket) {
+    // if (!ticket.relayWork.eventsToSave[event.id]) ticket.relayWork.eventsToSave[event.id] = { event, relays: {[url]: true}}
+    // else ticket.relayWork.eventsToSave[event.id].relays[url] = true
+    ticket.relayWork.eventsToSave.push({ event, relay: url})
+  }
+
+  async function addTicketToQueue(ticket, subName) {
+    subControl[subName].queue.push(ticket)
+    // if (!connected) return
+    if (status === 'unconnected') await connect()
+    else if (status === 'connected' && !subControl[subName].sub) startSub(subName)
+    else if (status === 'connected' && subControl[subName].mode === 'stream') startStreamTickets(subName)
+  }
+
+  function updateTicket(ticket, subName) {
+    // remove ticket from queue
+    // console.log('updateTicket', ticket, subName, JSON.parse(JSON.stringify(subControl)))
+    let index = subControl[subName].queue.findIndex(tck => tck.id === ticket.id)
+    // console.log('updateTicket', index, ticket, subName, JSON.parse(JSON.stringify(subControl)))
+    if (index !== -1) {
+      if (JSON.stringify(subControl[subName].queue[index].relayWork.filter) === JSON.stringify(ticket.relayWork.filter)) return
+      subControl[subName].queue[index].relayWork.filter = ticket.relayWork.filter
+      if (!subControl[subName].sub) startSub(subName)
+      else if (subControl[subName].mode === 'stream') startStreamTickets(subName)
+    }
+    // console.log('updateTicket', ticket, subName, JSON.parse(JSON.stringify(subControl)))
+  }
+
+  function cancelTicket(ticket, subName) {
+    if (subControl[subName].ticket && subControl[subName].ticket.id === ticket.id) {
+      subControl[subName].ticket.type = 'cancel'
+      completeTicket(subControl[subName].ticket, 0)
+    } else {
+      // remove ticket from queue
+      let index = subControl[subName].queue.findIndex(tck => tck.id === ticket.id)
+      if (index !== -1) subControl[subName].queue.splice(index, 1)
+      // if (subControl[subName].mode === 'stream' && subControl[subName].queue?.length) startStreamTickets(subName)
+    }
+    // console.log('cancelTicket', ticket, subName, JSON.parse(JSON.stringify(subControl)))
+  }
+
+  function publishTicket(ticket) {
+    let { event } = ticket.relayWork
+    let pub = relay.publish(event)
+    pub.on('ok', () => {
+      console.log(`${url} PUBLISH OK: event ${event.id} accepted`)
+      addEventToTicket(event, ticket)
+      checkTicketForCompletion(ticket)
+      self.postMessage({ ticket: { id: ticket.id, results: true, success: true }})
+    })
+    pub.on('seen', () => {
+      console.log(`${url} PUBLISH SEEN: event ${event.id} was seen`)
+      addEventToTicket(event, ticket)
+      checkTicketForCompletion(ticket)
+      self.postMessage({ ticket: { id: ticket.id, results: true, success: true }})
+    })
+    pub.on('failed', reason => {
+      console.log(`${url} PUBLISH FAILED: event ${event.id} failed because ${reason}`)
+      self.postMessage({ ticket: { id: ticket.id, results: false, success: true }})
+    })
+  }
+
+  const processTicket = (ticket) => {
+    let { type } = ticket
+    let { subName } = ticket.relayWork
+    switch (type) {
+      case 'call':
+      case 'stream':
+        addTicketToQueue(ticket, subName)
+        return
+      case 'update':
+        // only for stream subs
+        updateTicket(ticket, subName)
+        return
+      case 'cancel':
+        cancelTicket(ticket, subName)
+        return
+      case 'publish':
+        if (status === 'connected') publishTicket(ticket)
+        return
+    }
+  }
+
+  return {
+    processTicket,
+    status() {
+      let subs = JSON.parse(JSON.stringify(subControl))
+      return {
+        status,
+        subs
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 <template>
   <div
     color='accent'
-    class='post-padding cursor-pointer no-hover flex row no-wrap'
+    class='post-padding cursor-pointer no-hover flex column no-wrap relative-position'
     clickable
     manual-focus
     :class='(hasReply ? "post-has-reply" : "") +
@@ -11,26 +11,12 @@
       (hasReplyChildren ? " post-has-child-reply" : "")'
     @click.stop="toEvent(event.id)"
   >
-    <div
-      clickable
-      avatar
-      top
-      class='relative-position'
-    >
       <div v-if="isReply" class="is-reply-connector"></div>
-        <BaseUserAvatar
-          :pubkey='event.pubkey'
-          size='1.5rem'
-          :round='true'
-          :bordered='hasReply || isReply || hasReplyChildren || isChildReply'
-          :hover-effect='true'
-          style='z-index: 1;'
-        />
       <div v-if="hasReply" class="has-reply-connector"></div>
       <div
         v-if="replyMode === 'reply'"
         class="has-replying-connector"
-        :style='"height: " + (postHeight) + "px;"'
+        :style='"height: " + (headerHeight + postHeight) + "px;"'
       />
       <div
         ref='hasChildReplyConnector'
@@ -39,32 +25,33 @@
         style='visibility: hidden;'
         :style='childReplyConnectorStyle()'
       >
-        <div
+        <!-- <div
           v-for="(thread, index) in event.replies"
           :key="thread[0].id"
           ref="hasChildReplyConnectorTick"
           class="has-child-reply-tick"
           :style='childReplyTickStyle(index)'
-        />
+        /> -->
       </div>
-    </div>
-    <div class='flex column no-wrap col full-width'>
-      <q-item-section ref='postContent' class='relative-position' style='padding: 0 .2rem;'>
-
-        <div class='absolute-top-right flex row items-center post-info' style='z-index: 1;' @click.stop>
-          <q-item-label class='q-pr-xs' style='opacity: .8; font-size: 90%;'>{{ niceDate(event.created_at) }}</q-item-label>
-          <BaseButtonRelays
-            button-class='text-secondary'
-            :event='event'
-          />
-          <BaseButtonInfo
-            button-class='text-secondary'
-            :event='event'
-          />
-        </div>
+    <div
+      ref='postHeader'
+      clickable
+      avatar
+      top
+      class='relative-position q-px-xs flex row justify-between items-center'
+    >
+      <div class='flex row' style='gap: 1rem;'>
+        <BaseUserAvatar
+          :pubkey='event.pubkey'
+          :size='highlighted ? "lg" : "md"'
+          :round='true'
+          :bordered='hasReply || isReply || hasReplyChildren || isChildReply'
+          :hover-effect='true'
+          style='z-index: 1;'
+        />
         <div class='q-pb-xs'>
           <q-item-label caption class="text-secondary" style='opacity: .7;'>
-              <span @click.stop="toProfile(event.pubkey)">{{ shorten(hexToBech32(event.pubkey, 'npub')) }}</span>
+              <a :href=getProfile(event.pubkey) style='color: currentColor; text-decoration: none;' @click.stop="toProfile(event.pubkey)">{{ shorten(hexToBech32(event.pubkey, 'npub')) }}</a>
           </q-item-label>
           <q-space/>
           <q-item-label :line='1' clickable>
@@ -77,14 +64,77 @@
               !(isReply || isChildReply)
             "
             class='q-pl-sm'
-            style='font-size: .9rem;'
+            style='font-size: .8rem;'
           >
-            <span >in reply to&nbsp;</span>
-            <a @click.stop="toEvent(tagged)">
+            <span>in reply to&nbsp;</span>
+            <a :href=getNote(tagged) @click.stop="toEvent(tagged)">
               {{ shorten(hexToBech32(tagged, 'note')) }}
             </a>
           </q-item-label>
         </div>
+      </div>
+      <div class='flex row items-center post-info' style='z-index: 1;' @click.stop>
+        <q-item-label class='q-pr-xs' style='opacity: .8; font-size: 90%;'>{{ niceDate(event.created_at) }}</q-item-label>
+        <q-fab
+          color='secondary'
+          icon='more_vert'
+          direction='down'
+          vertical-actions-align='right'
+          padding='xs'
+          flat
+          dense
+
+        >
+            <div style='background: var(--q-background);'>
+              <BaseButtonInfo
+                button-class='text-secondary full-width justify-start no-wrap'
+                :event='event'
+                size='md'
+              />
+            </div>
+            <div style='background: var(--q-background);'>
+              <BaseButtonRelays
+                button-class='text-secondary full-width justify-start no-wrap'
+                :event='event'
+                size='md'
+              />
+            </div>
+        </q-fab>
+        <!-- <q-btn icon='more_vert' dense color='secondary' flat >
+          <q-menu
+            style='background: var(--q-background); padding: .2rem;'
+          >
+            <div >
+              <BaseButtonInfo
+                button-class='text-secondary full-width justify-start no-wrap'
+                :event='event'
+                :verbose='true'
+                size='md'
+              />
+            </div>
+            <div>
+              <BaseButtonRelays
+                button-class='text-secondary full-width justify-start no-wrap'
+                :event='event'
+                :verbose='true'
+                size='md'
+              />
+            </div>
+          </q-menu>
+        </q-btn> -->
+        <!-- <BaseButtonRelays
+          button-class='text-secondary'
+          :event='event'
+        />
+        <BaseButtonInfo
+          button-class='text-secondary'
+          :event='event'
+        /> -->
+        </div>
+    </div>
+    <div class='flex column no-wrap col full-width'>
+      <q-item-section ref='postContent'>
+        <div class='q-py-sm q-px-lg'>
         <BaseMarkdown
           v-if="event.kind === 1"
           :content='event.interpolated.text'
@@ -100,28 +150,34 @@
           class='reposts flex column q-pr-md'
           :clickable='false'
         >
-          <BasePost
-            v-for='(repost, index) in reposts'
-            :key='repost.id + "_" + reposts.length + "_" + index'
-            :event='repost'
-            :manual-focus='false'
-            :is-embeded='true'
-            @click.stop="toEvent(repost.id)"
-            @resized='calcConnectorValues(10)'
-          />
+          <div
+            v-for='(eventId, index) in mentionEvents'
+            :key='eventId + "_" + mentionEvents.length + "_" + index'
+          >
+            <BasePost
+              v-if='$store.state.eventsCache[eventId]'
+              :event='$store.state.eventsCache[eventId]'
+              :manual-focus='false'
+              :is-embeded='true'
+              @click.stop="toEvent(eventId)"
+              @resized='calcConnectorValues(10)'
+            />
+          </div>
+        </div>
         </div>
       <!-- </q-item-label> -->
         <div
           v-if='!isRepost && $store.state.keys.pub && (replyDepth !== -1)'
-          class='flex row items-center no-wrap reply-buttons'
+          class='flex row items-center no-wrap reply-buttons full-width'
           :color="replying ? 'primary' : ''"
-          :class='replying ? "justify-between" : "justify-end"'
         >
-          <div v-if='replyMode && replyMode !== "tip"' class='text-primary text-thin col q-pl-xs' style=' font-size: 90%; font-weight: 300;'>{{replyMode}}</div>
-          <div class='flex row no-wrap'>
+          <!-- :class='replying ? "justify-between" : "justify-around"' -->
+          <!-- <div v-if='replyMode && replyMode !== "tip"' class='text-primary text-thin col q-pl-xs' style=' font-size: 90%; font-weight: 300;'>{{replyMode}}</div> -->
+          <!-- <div class='flex row no-wrap full-width'> -->
             <q-tabs
               v-model='replyMode'
-              class='no-padding no-margin'
+              class='text-secondary full-width'
+              align='justify'
               unelevated
               dense
               flat
@@ -129,7 +185,8 @@
               :size='highlighted ? "md" : "sm"'
               @click.stop
             >
-              <q-tab name='tip' class='no-padding'>
+          <!-- <div v-if='replyMode && replyMode !== "tip"' class='text-primary text-thin col q-pl-xs' style=' font-size: 90%; font-weight: 300;'>{{replyMode}}</div> -->
+              <q-tab  class='no-padding'>
                 <BaseButtonLightning
                   v-if='$store.getters.profileLud06(event.pubkey)'
                   :pubkey='event.pubkey'
@@ -157,39 +214,35 @@
                   </q-tooltip>
                 </q-icon>
               </q-tab>
-              <q-tab name='reply' class='no-padding'>
-                <q-icon name='chat_bubble_outline' class='flip-horizontal' >
+              <q-tab name='reply' class='no-padding no-wrap flex row'>
+                <div class='no-wrap flex row items-center self-start' style='gap: .5rem;'>
+                <q-icon name='chat_bubble_outline' class='flip-horizontal relative-position' >
                   <q-tooltip>
                     reply
                   </q-tooltip>
                 </q-icon>
+                <span v-if='replyCount' style='position: abosolute; right: 0'>{{replyCount}}</span>
+                </div>
+              </q-tab>
+              <q-tab v-if='replyMode && replyMode !== "tip"' class='no-padding' @click.stop='replyMode = null'>
+                <q-icon
+                  name="close"
+                  color='accent'
+                >
+                  <q-tooltip>
+                    cancel
+                  </q-tooltip>
+                </q-icon>
               </q-tab>
             </q-tabs>
-            <div class='flex row no-wrap items-center'>
-              <q-separator v-if='replyMode && replyMode !== "tip"' color='primary' size='1px' vertical spaced :class='highlighted ? "q-mt-sm" : "q-mt-xs"'/>
-              <q-btn
-                v-if='replyMode && replyMode !== "tip"'
-                icon="close"
-                color='primary'
-                flat
-                dense
-                @click.stop='replyMode = null'
-                :size='highlighted ? "md" : "sm"'
-              >
-                <q-tooltip>
-                  cancel
-                </q-tooltip>
-              </q-btn>
-            </div>
-          </div>
+          <!-- </div> -->
         </div>
-        <div v-else style='min-height: 1rem;'/>
       </q-item-section>
       <q-item-section v-if="replyMode && replyMode !== 'tip'" class='new-reply-box' ref='replyContent'>
         <q-tab-panels
           v-model="replyPanel"
           class='no-padding full-width overflow-hidden'
-          style='background-color: inherit; max-width: 100%; padding: 0 .25 0 0;'
+          style='background: var(--q-background); max-width: 100%; z-index: 1;'
           @transition='calcConnectorValues(10)'
         >
           <q-tab-panel name="embed" class='no-padding' @click.stop>
@@ -213,7 +266,7 @@
         </q-tab-panels>
       </q-item-section>
 
-      <div v-if='hasReplyChildren && replyDepth !== -1' class='full-width' >
+      <div v-if='hasReplyChildren && replyDepth !== -1 && event.replies && event.replies.length < 3' class='full-width' style='padding-left: 12px;'>
         <div v-for="thread in event.replies" :key="thread[0].id" ref="childReplyContent">
           <BasePostThread
             :events="thread"
@@ -223,7 +276,6 @@
           />
         </div>
       </div>
-      <div v-if='isRepost' style='min-height: .5rem;'></div>
     </div>
   </div>
 </template>
@@ -250,6 +302,7 @@ export default defineComponent({
     highlighted: {type: Boolean, default: false},
     position: {type: String, default: 'standalone'},
     replyDepth: {type: Number, default: 0},
+    replyCount: {type: Number, default: 0},
     isEmbeded: {type: Boolean, default: false},
   },
   components: {
@@ -283,6 +336,11 @@ export default defineComponent({
       if (replyTags?.length) return replyTags[replyTags.length - 1]
       return null
     },
+    taggedPubkeys() {
+      let pubkeyTags = this.event.tags.filter((tag) => tag[0] === 'p' && tag[1]).map((tag) => tag[1])
+      if (pubkeyTags?.length) return pubkeyTags
+      return null
+    },
 
     isRepost() {
       return this.event.interpolated?.text === '' &&
@@ -312,7 +370,7 @@ export default defineComponent({
     },
 
     hasReplyChildren() {
-      if (this.event.replies && this.event.replies.length > 0) return true
+      if (this.event.replies && this.event.replies.length > 0 && this.event.replies.length < 3) return true
       return false
     },
 
@@ -359,33 +417,35 @@ export default defineComponent({
     this.trigger++
   },
 
-  deactivated() {
-    if (this.reposts.length) {
-      for (let event of this.reposts) this.$store.dispatch('cancelUseProfile', {pubkey: event.pubkey})
-    }
-  },
+  // deactivated() {
+  //   if (this.reposts.length) {
+  //     for (let event of this.reposts) this.$store.dispatch('cancelUseProfile', {pubkey: event.pubkey})
+  //   }
+  // },
 
   methods: {
     childReplyConnectorStyle() {
       if (this.childReplyHeights?.length) {
-        let height = this.postHeight + this.childReplyHeights.slice(0, -1).reduce((c, p) => c + p, 0)
+        let height = this.headerHeight + this.postHeight + this.childReplyHeights.slice(0, -1).reduce((c, p) => c + p, 0)
+        height = height + (this.isChildReply ? 12 : 22)
         if (this.replyHeight) height += this.replyHeight
         return 'visibility: visible; height: ' + height + 'px'
       } else return ''
     },
 
-    childReplyTickStyle(index) {
-      if (this.childReplyHeights?.length) {
-        let offset = this.postHeight + this.childReplyHeights.filter((_, i) => i < index).reduce((c, p) => c + p, 0)
-        if (this.replyHeight) offset += this.replyHeight
-        return 'visibility: visible; top: ' + offset + 'px'
-      } else return ''
-    },
+    // childReplyTickStyle(index) {
+    //   if (this.childReplyHeights?.length) {
+    //     let offset = this.postHeight + this.childReplyHeights.filter((_, i) => i < index).reduce((c, p) => c + p, 0)
+    //     if (this.replyHeight) offset += this.replyHeight
+    //     return 'visibility: visible; top: ' + offset + 'px'
+    //   } else return ''
+    // },
 
     calcConnectorValues(time = 2000) {
       this.resizing = !this.resizing
       nextTick(() => {
         setTimeout(() => {
+          this.headerHeight = this.$refs.postHeader ? this.$refs.postHeader.clientHeight : 0
           this.postHeight = this.postContentHeight
           this.replyHeight = this.replyContentHeight
           if (this.hasReplyChildren) {
@@ -432,8 +492,10 @@ export default defineComponent({
 <style lang="css" scoped>
 .post-padding {
   box-sizing: border-box;
+  /*
   border-bottom: 1px dotted var(--q-accent);
-  padding: .5rem 0 0 .25rem;
+  */
+  padding: 1rem 0;
   margin-top: 0;
   width: 100%;
   min-width: 100%;
@@ -466,67 +528,71 @@ export default defineComponent({
   border-bottom: 0;
 }
 .post-is-child-reply {
-  padding: 0;
+  padding: .5rem 0;
 }
 .has-reply-connector,
 .is-reply-connector,
 .has-child-reply-connector,
 .has-child-reply-tick {
-  opacity: .7;
+  opacity: .3;
 }
 .has-reply-connector {
-  width: 2px;
+  width: 8px;
   position: absolute;
-  left: calc((100% / 2) - 1px);
+  left: 5px;
   height: 100%;
   top: 1.5rem;
   background: var(--q-accent);
   z-index: 0;
 }
 .is-reply-connector {
-  width: 2px;
+  width: 8px;
   position: absolute;
-  left: calc((100% / 2) - 1px);
+  left: 5px;
   height: 2rem;
-  top: -1.5rem;
+  top: 0;
   background: var(--q-accent);
   z-index: 0;
 }
 .has-replying-connector {
-  width: .7rem;
+  width: 8px;
   position: absolute;
-  left: calc((100% / 2) - 1px);
+  left: 5px;
   top: 1.5rem;
-  border-left: 2px solid var(--q-accent);
-  border-bottom: 2px solid var(--q-accent);
+  background: var(--q-accent);
   z-index: 0;
   opacity: .3;
 }
 .post-highlighted .has-replying-connector {
-  top: 1.9rem;
+  top: 2.5rem;
 }
 .has-child-reply-connector {
-  width: 2px;
+  width: 8px;
   position: absolute;
-  left: calc((100% / 2) - 1px);
-  top: .6rem;
+  left: 5px;
+  top: 1.5rem;
   background: var(--q-accent);
   z-index: 0;
+  border-radius: 4px;
+
 }
 .has-child-reply-tick {
+  display: none;
   width: .55rem;
-  height: 2px;
+  height: 5px;
   position: absolute;
-  left: calc((100% / 2) - 1px);
+  left: 5px;
   background: var(--q-accent);
   z-index: 0;
 }
 
 .new-reply-box {
   border: 1px solid var(--q-primary);
-  border-radius: .4rem;
-  padding: .3rem .3rem 0;
-  margin: 0 .3rem .3rem 0;
+  border-radius: .5rem;
+  margin: 0 .3rem 1rem .3rem;
+  padding: .3rem;
+  z-index: 1;
+  background: var(--q-background);
 }
 
 @media screen and (min-width: 600px) {

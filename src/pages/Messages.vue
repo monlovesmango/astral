@@ -17,7 +17,7 @@
           style='width: 50%; self-justify: end;'
         />
       </div>
-      <q-separator color='accent' size='1px' spaced/>
+      <!-- <q-separator color='accent' size='1px' spaced/> -->
       <div class='relative-position'>
         <div class='absolute-top flex justify-center'>
           <span
@@ -87,7 +87,7 @@
 
 <script>
 import helpersMixin from '../utils/mixin'
-import { dbUserProfile, streamUserProfile, dbMessages, listenMessages } from '../query'
+import { dbProfile, streamProfile, dbMessages, streamPeerIncomingMessages, streamPeerOutgoingMessages } from '../query'
 import BaseMessage from 'components/BaseMessage.vue'
 import { useQuasar } from 'quasar'
 import { createMetaMixin } from 'quasar'
@@ -174,7 +174,7 @@ export default {
 
   async beforeUnmount() {
     if (this.sub.listenMessages) this.sub.listenMessages.cancel()
-    if (this.sub.streamUserProfile) this.sub.streamUserProfile.cancel()
+    if (this.sub.streamProfile) this.sub.streamProfile.cancel()
   },
 
   methods: {
@@ -190,22 +190,32 @@ export default {
 
     async start() {
       // load peer profile if it exists
-      let profile = await dbUserProfile(this.hexPubkey)
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+      let profile = await dbProfile(this.hexPubkey)
       if (profile) this.$store.dispatch('handleAddingProfileEventToCache', profile)
-      this.sub.streamUserProfile = await streamUserProfile(this.hexPubkey, async event => {
-        this.$store.dispatch('handleAddingProfileEventToCache', event)
+      this.sub.streamProfile = await streamProfile({ authors: [this.hexPubkey], relays}, async events => {
+        for (let event of events) this.$store.dispatch('handleAddingProfileEventToCache', event)
       })
 
-      // listen for new messages
-      this.sub.listenMessages = await listenMessages(async event => {
-        let eventUserTags = event.tags
-            .filter(([t, v]) => t === 'p' && v)
-            .map(([_, v]) => v)
-        if ((event.pubkey === this.hexPubkey && eventUserTags.includes(this.$store.state.keys.pub)) ||
-          (event.pubkey === this.$store.state.keys.pub && eventUserTags.includes(this.hexPubkey))
-        )
-          this.addMessage(event)
-      })
+      this.sub.streamPeerIncomingMessages = await streamPeerIncomingMessages(
+        { authors: [this.$store.state.keys.pub], peers: [this.hexPubkey], relays, limit: 1000 },
+        null,
+        () => { this.loadMore() })
+      this.sub.streamPeerOutgoingMessages = await streamPeerOutgoingMessages(
+        { authors: [this.$store.state.keys.pub], peers: [this.hexPubkey], relays, limit: 1000 },
+        null,
+        () => { this.loadMore() })
+
+      // // listen for new messages
+      // this.sub.listenMessages = await listenMessages(async event => {
+      //   let eventUserTags = event.tags
+      //       .filter(([t, v]) => t === 'p' && v)
+      //       .map(([_, v]) => v)
+      //   if ((event.pubkey === this.hexPubkey && eventUserTags.includes(this.$store.state.keys.pub)) ||
+      //     (event.pubkey === this.$store.state.keys.pub && eventUserTags.includes(this.hexPubkey))
+      //   )
+      //     this.addMessage(event)
+      // })
 
       // commit to reading messages
       this.$store.commit('haveReadMessage', this.hexPubkey)
@@ -234,12 +244,12 @@ export default {
 
       if (loadedMessages.length < 50) {
         this.canLoadMore = false
-      }
+      } else this.canLoadMore = true
 
       let loadedMessagesFiltered = await this.processMessages(loadedMessages)
       this.messages = loadedMessagesFiltered.concat(this.messages)
       this.messages.sort((p, c) => p.created_at - c.created_at)
-      done(!this.canLoadMore)
+      if (done) done(!this.canLoadMore)
     },
 
     async processMessages(messages) {

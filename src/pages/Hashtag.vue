@@ -41,13 +41,15 @@ export default defineComponent({
       this.hashtag = curr
       if (curr !== prev && curr && prev) {
         this.stop()
+      }
+      if (curr !== prev && curr) {
         this.start()
       }
     }
   },
 
   mounted() {
-    this.start()
+    if (this.$route.params.hashtagId) this.start()
   },
 
   beforeUnmount() {
@@ -59,19 +61,15 @@ export default defineComponent({
     async start() {
       this.threads = []
       this.eventsSet = new Set()
+      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
 
-      this.sub.hashtag = await dbStreamTagKind('t', this.$route.params.hashtagId.toLowerCase(), 1, event => {
-        this.processEvent(event)
+      this.sub.hashtag = await dbStreamTagKind({type: 't', values: [this.$route.params.hashtagId.toLowerCase()], kinds: [1], relays}, events => {
+        for (let event of events) this.processEvent(event)
       })
-
-      // this.sub.hashtagOld = await dbStreamTagKind('hashtag', this.$route.params.hashtagId.toLowerCase(), 1, event => {
-      //   this.processEvent(event)
-      // })
     },
 
     stop() {
       if (this.sub.hashtag) this.sub.hashtag.cancel()
-      if (this.sub.oldHashtag) this.sub.oldHashtag.cancel()
       this.threads = []
       this.eventsSet = new Set()
     },
@@ -82,6 +80,7 @@ export default defineComponent({
       this.interpolateEventMentions(event)
       this.eventsSet.add(event.id)
       addToThread(this.threads, event, '', event.pubkey !== this.$store.state.keys.pub)
+      this.$store.dispatch('useProfile', {pubkey: event.pubkey})
       return
     },
   }
