@@ -173,7 +173,9 @@ export default defineComponent({
       }
 
       if (this.isBech32Key(this.searchingProfile) && this.bech32ToHex(this.searchingProfile).match(/^[a-f0-9A-F]{64}$/)) {
-        this.toProfile(this.bech32ToHex(this.searchingProfile))
+        if (this.searchingProfile.startsWith('npub')) this.toProfile(this.bech32ToHex(this.searchingProfile))
+        else if (this.searchingProfile.startsWith('note')) this.toEvent(this.bech32ToHex(this.searchingProfile))
+        else return
         this.searchingProfile = ''
         this.searching = false
         return

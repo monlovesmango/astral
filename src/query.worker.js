@@ -179,6 +179,7 @@ const methods = {
       subName: 'main',
       filter,
       relays,
+      eose: true
     }
     let dbWork = {
       action: 'stream',

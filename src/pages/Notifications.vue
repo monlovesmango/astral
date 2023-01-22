@@ -7,6 +7,7 @@
           :event="event"
           :highlighted="$store.state.lastNotificationRead < event.created_at"
         />
+        <div class='bottom-border'></div>
       </div>
       <BaseButtonLoadMore :loading-more='loadingMore' :reached-end='reachedEnd' @click='loadMore' />
     </div>

@@ -17,7 +17,7 @@
           style='width: 50%; self-justify: end;'
         />
       </div>
-      <q-separator color='accent' size='1px' spaced/>
+      <!-- <q-separator color='accent' size='1px' spaced/> -->
       <div class='relative-position'>
         <div class='absolute-top flex justify-center'>
           <span

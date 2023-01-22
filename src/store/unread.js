@@ -31,14 +31,34 @@ export default function (store) {
   let sub = {}
   const streamMentionsAndMessages = async () => {
     let relays = Object.keys(store.state.relays).length ? Object.keys(store.state.relays) : Object.keys(store.state.defaultRelays)
+    let streamMainMentionsEose = false
+    let streamMainIncomingMessagesEose = false
+    let streamMainIncomingMessagesPeers = {}
     if (store.state.keys.pub) {
       if (sub.streamMainMentions) sub.streamMainMentions.update({ authors: [store.state.keys.pub], relays })
-      else sub.streamMainMentions = await streamMainMentions({ authors: [store.state.keys.pub], relays }, () => setUnreadNotifications())
+      else sub.streamMainMentions = await streamMainMentions({ authors: [store.state.keys.pub], relays },
+        () => { if (streamMainMentionsEose) setUnreadNotifications() },
+        () => {
+          if (!streamMainMentionsEose) {
+            console.log('streamMainMentionsEose eose')
+            streamMainMentionsEose = true
+            setUnreadNotifications()
+          }
+        })
 
       if (sub.streamMainIncomingMessages) sub.streamMainIncomingMessages.update({ authors: [store.state.keys.pub], relays })
-      else sub.streamMainIncomingMessages = await streamMainIncomingMessages({ authors: [store.state.keys.pub], relays }, events => {
-        for (let event of events) setUnreadMessages(event.pubkey)
-      })
+      else sub.streamMainIncomingMessages = await streamMainIncomingMessages({ authors: [store.state.keys.pub], relays },
+        events => {
+          if (streamMainIncomingMessagesEose) for (let event of events) setUnreadMessages(event.pubkey)
+          else streamMainIncomingMessagesPeers[event.pubkey] = true
+        },
+        () => {
+          if (!streamMainIncomingMessagesEose) {
+            console.log('streamMainIncomingMessages eose')
+            streamMainIncomingMessagesEose = true
+            for (let pubkey of Object.keys(streamMainIncomingMessagesPeers)) setUnreadMessages(pubkey)
+          }
+        })
 
       setUnreadNotifications()
       dbChats(store.state.keys.pub).then(chats => { chats.forEach(chat => { setUnreadMessages(chat.peer) }) })

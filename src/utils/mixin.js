@@ -1,5 +1,5 @@
 import Tribute from 'tributejs'
-import {shorten} from './helpers'
+import {shorten, shortenList} from './helpers'
 // import { stringify } from 'JSON'
 import {date} from 'quasar'
 import {nip04} from 'nostr-tools'
@@ -69,6 +69,7 @@ export default {
     },
 
     shorten,
+    shortenList,
 
     // niceDate(value) {
     //   // if (value + 60 * 60 /* an hour */ > Date.now() / 1000) {
@@ -304,7 +305,7 @@ export default {
       if (typeof key !== 'string') return false
       try {
         let { prefix } = bech32.decode(key.toLowerCase())
-        if (!['npub', 'nsec'].includes(prefix)) return false
+        if (!['npub', 'nsec', 'note'].includes(prefix)) return false
         if (prefix === 'npub') this.watchOnly = true
         if (prefix === 'nsec') this.watchOnly = false
         return this.isKey(this.bech32ToHex(key))

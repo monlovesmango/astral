@@ -1,22 +1,24 @@
 <template>
-  <div ref="src" class="hidden break-word-wrap"><slot /></div>
-  <div ref="append" class="hidden break-word-wrap"><slot name="append" /></div>
-  <div v-html="html" ref="html" class="break-word-wrap dynamic-content" @click='handleClicks' :class='longForm ? "long-form" : ""'/>
-  <q-btn
-    v-if='longForm'
-    id='long-form-button'
-    dense
-    outline
-    rounded
-    color="accent"
-    class='text-weight-light q-ma-sm justify-between'
-    style='letter-spacing: .1rem; justify-content: space-between;'
-    label='show full post'
-    @click.stop="expand"
-  />
-  <div v-if='invoices.length'>
-  <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='lt-sm' style='padding: 1rem;'/>
-  <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='gt-xs' row-or-column='row' style='padding: 1rem;'/>
+  <div>
+    <div ref="src" class="hidden break-word-wrap"><slot /></div>
+    <div ref="append" class="hidden break-word-wrap"><slot name="append" /></div>
+    <div v-html="html" ref="html" class="break-word-wrap dynamic-content" @click='handleClicks' :class='longForm ? "long-form" : ""'/>
+    <q-btn
+      v-if='longForm'
+      id='long-form-button'
+      dense
+      outline
+      rounded
+      color="accent"
+      class='text-weight-light q-ma-sm justify-between full-width'
+      style='letter-spacing: .1rem; justify-content: space-between;'
+      label='show full post'
+      @click.stop="expand"
+    />
+    <div v-if='invoices.length'>
+      <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='lt-sm' style='padding: 1rem;'/>
+      <BaseLightningCard v-for='(invoice, index) in invoices' :key='index' :ln-string='invoice' class='gt-xs' row-or-column='row' style='padding: 1rem;'/>
+    </div>
   </div>
   <!-- <div v-if='links.length'>
     <BaseLinkPreview v-for='(link, idx) of links' :key='idx' :url='link' />

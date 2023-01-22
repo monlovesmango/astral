@@ -1,11 +1,33 @@
 <template>
-  <q-page>
-    <div>
-      <BaseHeader :separator='false'>{{ $t('feed') }}</BaseHeader>
-      <!-- <div class="text-h5 text-bold q-py-md q-px-sm full-width flex row justify-start">
-        {{ $t('feed') }}
-      </div> -->
-      <q-tabs
+  <q-page >
+  <!-- <div id='feed-scroll' style='max-height: 700px; overflow: auto;'> -->
+    <!-- <div> -->
+      <!-- <q-infinite-scroll @load='loadMore()' :offset='500' scroll-target='#feed-scroll'> -->
+      <BaseHeader :separator='false'>
+        <div class='flex row justify-start items-center' style='gap: 1rem;'>
+          <div>{{ $t('feed') }}</div>
+          <q-select borderless v-model="feedName" :options="['follows', 'global']" />
+        </div>
+      </BaseHeader>
+      <div
+        v-for='(item, index) in items'
+        :key='index'
+      >
+        <BasePostThread
+          :events="item"
+          class='full-width'
+          fetch-root-reply
+          @add-event='processEvent'
+        />
+        <div v-if='index === items.length - 6' v-intersection='handleIntersectionObserver'></div>
+      </div>
+          <div v-if='loadingMore' class='row justify-center'>
+            <q-spinner-orbit color="accent" size='sm' />
+          </div>
+      <!-- </q-infinite-scroll> -->
+      <!-- </div> -->
+    <!-- </div> -->
+      <!-- <q-tabs
         v-model="tab"
         dense
         outline
@@ -29,12 +51,12 @@
       :label='"load " + unreadFeed[tab].length + " unread"'
       @click='loadUnread'
     />
-    <BasePostThread v-for='(item, index) in items' :key='index' :events="item" class='full-width' @add-event='processEvent'/>
+    <BasePostThread v-for='(item, index) in items' :key='index' :events="item" class='full-width' fetch-root-reply @add-event='processEvent'/>
     <BaseButtonLoadMore
       :loading-more='loadingMore'
       label='load more'
       @click='loadMore(tab)'
-    />
+    /> -->
   </q-page>
 </template>
 
@@ -44,7 +66,7 @@ import helpersMixin from '../utils/mixin'
 import {addToThread} from '../utils/threads'
 import {isValidEvent} from '../utils/event'
 import {getFeed} from '../query'
-import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
+// import BaseButtonLoadMore from 'components/BaseButtonLoadMore.vue'
 import { createMetaMixin } from 'quasar'
 
 const metaData = {
@@ -63,17 +85,18 @@ export default defineComponent({
   name: 'Feed',
   mixins: [helpersMixin, createMetaMixin(metaData)],
 
-  components: {
-    BaseButtonLoadMore,
-  },
-
-  // watch: {
-  //   lookingAround(curr, prev) {
-  //     if (curr) {
-  //       this.loadMore()
-  //     }
-  //   }
+  // components: {
+  //   BaseButtonLoadMore,
   // },
+
+  watch: {
+    feedName(curr, prev) {
+      if (curr !== prev) {
+        this.stop()
+        this.loadMore()
+      }
+    }
+  },
 
   // props: {
   //   lookingAround: {
@@ -84,50 +107,51 @@ export default defineComponent({
 
   data() {
     return {
-      reachedEnd: false,
-      feed: {
-        follows: [],
-        global: [],
-        AI: [],
-        bots: []
-      },
+      feed: [],
+      // feed: {
+      //   follows: [],
+      //   global: [],
+      //   AI: [],
+      //   bots: []
+      // },
       // feedCounts: {
       //   follows: 100,
       //   global: 100,
       //   AI: 100,
       //   bots: 100
       // },
-      unreadFeed: {
-        follows: [],
-        global: [],
-        AI: [],
-        bots: []
-      },
+      unreadFeed: [],
+      // unreadFeed: {
+      //   follows: [],
+      //   global: [],
+      //   AI: [],
+      //   bots: []
+      // },
       feedSet: new Set(),
-      bots: [],
-      follows: [],
-      botTracker: '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952',
+      // bots: [],
+      // follows: [],
+      // botTracker: '29f63b70d8961835b14062b195fc7d84fa810560b36dde0749e4bc084f0f8952',
       loadingMore: true,
       loadingUnread: false,
-      tab: 'follows',
+      // tab: 'follows',
+      feedName: 'follows',
       since: Math.round(Date.now() / 1000),
       until: Math.round(Date.now() / 1000),
       // profilesUsed: new Set(),
       // index: 0,
       lastLoaded: Math.round(Date.now() / 1000),
       refreshInterval: null,
-      unsubscribe: null,
     }
   },
 
   computed: {
     items() {
-      return this.feed[this.tab]
+      return this.feed
     }
   },
 
   async mounted() {
-    this.loadMore(this.tab)
+    // this.loadMore(this.tab)
     //   if (this.loadingMore) this.loadingMore = false
 
     // this.bots = await this.getFollows(this.botTracker)
@@ -138,28 +162,26 @@ export default defineComponent({
     // }
 
     if (this.$store.state.follows.length === 0) {
-      this.tab = 'global'
+      this.feedName = 'global'
     }
+    this.loadMore()
 
-    this.refreshInterval = setInterval(async () => {
-      let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
-      // let results = await dbFeed(this.since)
-      let results = await getFeed({ relays, since: this.since, limit: 500 })
-      // let feed = this.feed.global.length ? this.unreadFeed : this.feed
-      if (results) for (let event of results) this.processEvent(event)
-      // for (let feedName of Object.keys(this.feed)) {
-      //   this.feed[feed] = this.feed[feed].concat(feed[feed])
-      // }
-      // if (this.loadingMore) this.loadingMore = false
-      this.since = Math.round(Date.now() / 1000)
-    }, 10000)
+    // this.refreshInterval = setInterval(async () => {
+    //   let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
+    //   // let results = await dbFeed(this.since)
+    //   let results = await getFeed({ relays, since: this.since, limit: 500 })
+    //   // let feed = this.feed.global.length ? this.unreadFeed : this.feed
+    //   if (results) for (let event of results) this.processEvent(event)
+    //   // for (let feedName of Object.keys(this.feed)) {
+    //   //   this.feed[feed] = this.feed[feed].concat(feed[feed])
+    //   // }
+    //   // if (this.loadingMore) this.loadingMore = false
+    //   this.since = Math.round(Date.now() / 1000)
+    // }, 10000)
   },
 
   async beforeUnmount() {
-    if (this.listener) this.listener.cancel()
-    // this.profilesUsed.forEach(pubkey => this.$store.dispatch('cancelUseProfile', {pubkey}))
-    if (this.unsubscribe) this.unsubscribe()
-    if (this.refreshInterval) clearInterval(this.refreshInterval)
+    this.stop()
   },
 
   methods: {
@@ -174,26 +196,49 @@ export default defineComponent({
       //   return
       // }
 
-      let loadedFeed = {
-        follows: [],
-        global: [],
-        AI: [],
-        bots: []
-      }
+      let loadedFeed = []
       // let lastThread = this.feed[feedName][this.feed[feedName].length - 1]
       // let until = lastThread ? lastThread[lastThread.length - 1].latest_created_at : Math.round(Date.now() / 1000)
-      // console.log('until', until, this.feed[feedName])
       // let loadedFeed = []
+      let settings = { relays, until: this.until + (5 * 60), limit: 50 }
+      if (this.feedName === 'follows') settings.authors = this.$store.state.follows
 
-      let results = await getFeed({ relays, until: this.until + (5 * 60), limit: 300 })
+      let results = await getFeed(settings)
       if (results) for (let event of results) this.processEvent(event, loadedFeed)
-      for (let feedName of Object.keys(this.feed)) {
-        this.feed[feedName] = this.feed[feedName].concat(loadedFeed[feedName])
-      }
+      this.feed = this.feed.concat(loadedFeed)
+      // for (let feedName of Object.keys(this.feed)) {
+      //   this.feed[feedName] = this.feed[feedName].concat(loadedFeed[feedName])
+      // }
 
         // console.log('loaded feed', results, this.feed, this.counts)
 
-      this.loadingMore = false
+      // this.loadingMore = false
+
+     if (!this.refreshInterval) this.refreshInterval = setInterval(async () => {
+      // let results = await dbFeed(this.since)
+      let settings = { relays, since: this.since, limit: 100 }
+      if (this.feedName === 'follows') settings.authors = this.$store.state.follows
+      let results = await getFeed(settings)
+      // let feed = this.feed.global.length ? this.unreadFeed : this.feed
+      if (results) for (let event of results) this.processEvent(event)
+      // for (let feedName of Object.keys(this.feed)) {
+      //   this.feed[feed] = this.feed[feed].concat(feed[feed])
+      // }
+      this.since = Math.round(Date.now() / 1000)
+      if (this.loadingMore) this.loadingMore = false
+    }, 10000)
+    },
+    stop() {
+      if (this.refreshInterval) clearInterval(this.refreshInterval)
+      this.feed = []
+      this.unreadFeed = []
+      this.feedSet = new Set()
+      this.since = Math.round(Date.now() / 1000)
+      this.until = Math.round(Date.now() / 1000)
+      // profilesUsed: new Set(),
+      // index: 0,
+      this.lastLoaded = Math.round(Date.now() / 1000)
+      this.refreshInterval = null
     },
 
     loadUnread() {
@@ -218,10 +263,13 @@ export default defineComponent({
       let feed
       if (event.pubkey === this.$store.state.keys.pub) feed = activeFeed
       else feed = (event.created_at > this.lastLoaded) ? unreadFeed : activeFeed
-      if (this.$store.state.follows.includes(event.pubkey)) addToThread(feed.follows, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      if (this.isBot(event)) addToThread(feed.bots, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      if (this.isAI(event)) addToThread(this.feed.AI, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
-      else addToThread(feed.global, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      if (this.feedName === 'global' && (this.isBot(event) || this.isAI(event))) return
+      addToThread(feed, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+
+      // if (this.$store.state.follows.includes(event.pubkey)) addToThread(feed.follows, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      // if (this.isBot(event)) addToThread(feed.bots, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      // if (this.isAI(event)) addToThread(this.feed.AI, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
+      // else addToThread(feed.global, JSON.parse(JSON.stringify(event)), 'feed', event.pubkey !== this.$store.state.keys.pub)
     },
 
     // async getFollows(pubkey) {
@@ -240,7 +288,7 @@ export default defineComponent({
     },
 
     isBot(event) {
-      if (this.bots.includes(event.pubkey)) return true
+      // if (this.bots.includes(event.pubkey)) return true
       if (event.content.includes('https://www.minds.com/newsfeed/')) return true
       return false
     },
@@ -249,6 +297,11 @@ export default defineComponent({
       if (event.pubkey === '5c10ed0678805156d39ef1ef6d46110fe1e7e590ae04986ccf48ba1299cb53e2') return true
       if (event.tags.findIndex(([t, v]) => t === 'p' && v === '5c10ed0678805156d39ef1ef6d46110fe1e7e590ae04986ccf48ba1299cb53e2') >= 0) return true
       return false
+    },
+
+    handleIntersectionObserver(e) {
+      // console.log('handleIntersectionObserver', e)
+      if (e.isIntersecting) this.loadMore()
     },
 
     // printDetails(details) {

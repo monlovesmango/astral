@@ -7,6 +7,14 @@ export function shorten(str, number = 5) {
   return str ? str.slice(0, number) + '…' + str.slice(-(number)) : ''
 }
 
+export function shortenList(list, number = 3) {
+  if (!Array.isArray(list) || !list.length) return ''
+  let length = list.length
+  if (length === 1) return list[0]
+  else if (length <= number) return `${JSON.stringify(...list.slice(0, length - 2))} and ${list[length - 1]}`
+  else return `${JSON.stringify(...list.slice(0, number - 1))} and ${length - number} others`
+}
+
 export function getElementFullHeight(element) {
   let styles = window.getComputedStyle(element)
   let margin =

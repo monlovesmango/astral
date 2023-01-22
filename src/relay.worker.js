@@ -350,19 +350,19 @@ async function relayHandler(url) {
     let { event } = ticket.relayWork
     let pub = relay.publish(event)
     pub.on('ok', () => {
-      console.log(`${url} PUBLISH OK: event ${JSON.stringify(event)} accepted`)
+      console.log(`${url} PUBLISH OK: event ${event.id} accepted`)
       addEventToTicket(event, ticket)
       checkTicketForCompletion(ticket)
       self.postMessage({ ticket: { id: ticket.id, results: true, success: true }})
     })
     pub.on('seen', () => {
-      console.log(`${url} PUBLISH SEEN: event ${JSON.stringify(event)} was seen`)
+      console.log(`${url} PUBLISH SEEN: event ${event.id} was seen`)
       addEventToTicket(event, ticket)
       checkTicketForCompletion(ticket)
       self.postMessage({ ticket: { id: ticket.id, results: true, success: true }})
     })
     pub.on('failed', reason => {
-      console.log(`${url} PUBLISH FAILED: event ${JSON.stringify(event)} failed because ${reason}`)
+      console.log(`${url} PUBLISH FAILED: event ${event.id} failed because ${reason}`)
       self.postMessage({ ticket: { id: ticket.id, results: false, success: true }})
     })
   }

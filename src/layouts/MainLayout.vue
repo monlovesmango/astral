@@ -438,8 +438,10 @@ body {
   max-width: 100%;
   height: auto;
   padding-bottom: 2rem;
+  /*
   border-right: 1px solid var(--q-accent);
   border-left: 1px solid var(--q-accent);
+  */
   display: flex;
   flex-direction: column;
 }

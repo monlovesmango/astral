@@ -218,7 +218,7 @@
 <script>
 import {LocalStorage} from 'quasar'
 import {nextTick} from 'vue'
-import {nip05} from 'nostr-tools'
+// import {nip05} from 'nostr-tools'
 // import fetch from 'cross-fetch'
 
 import helpersMixin from '../utils/mixin'
@@ -229,6 +229,7 @@ import BaseInformation from 'components/BaseInformation.vue'
 import ThePreferences from 'components/ThePreferences.vue'
 import { createMetaMixin } from 'quasar'
 import { utils } from 'lnurl-pay'
+import fetch from 'cross-fetch'
 
 const metaData = {
   // sets document title
@@ -375,7 +376,7 @@ export default {
       if (this.metadata.nip05 === '') this.metadata.nip05 = undefined
       if (this.metadata.nip05) {
         if (
-          (await nip05.queryName(this.metadata.nip05)) !== this.$store.state.keys.pub
+          (await this.queryName(this.metadata.nip05)) !== this.$store.state.keys.pub
         ) {
           this.$q.notify({
             message: 'Failed to verify NIP05 identifier on server.',
@@ -493,6 +494,20 @@ export default {
       // this.preferences.font = font
       this.$emit('update-font', font)
     },
+    async queryName(fullname) {
+      try {
+        let [name, domain] = fullname.split('@')
+        if (!domain) return null
+
+        let res = await (
+          await fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
+        ).json()
+
+        return res.names && res.names[name]
+      } catch (_) {
+        return null
+      }
+    }
   }
 }
 </script>

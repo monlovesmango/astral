@@ -7,12 +7,15 @@
     </div>
     <BaseButtonShowMore v-if="ancestorsMissing" :root="ancestorsMissing"/>
 
-    <q-item ref="main" class='no-padding column'>
+    <div class='relative-position'>
+    <div v-if="ancestors && ancestors.length" class="is-reply-connector"></div>
+    <q-item ref="main" class='column relative-position' style='border: 2px solid var(--q-accent); border-radius: 1rem; z-index: 1; background: var(--q-background);'>
       <BasePost
         v-if="event"
         :event='event'
         :highlighted='true'
-        :position='ancestors.length ? "last" : "standalone"'
+        :reply-count='childrenThreadsFiltered?.length'
+        position='standalone'
         @add-event='processChildEvent'
       />
       <div v-else>
@@ -20,8 +23,7 @@
       </div>
       <BaseRelayList v-if="event" :event='event' class='q-px-sm'/>
     </q-item>
-
-    <q-separator color='accent' size='1px'/>
+    </div>
 
     <div v-if="childrenThreadsFiltered.length">
       <div class="text-h6 text-bold q-px-sm">{{ $t('replies') }}</div>
@@ -122,7 +124,6 @@ export default defineComponent({
     async start() {
       let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
       this.sub.event = await dbStreamEvent({ ids: [this.hexEventId], relays }, events => {
-        console.log('dbStreamEvent events', events)
         if (!events?.length) return
         let event = events[0]
         let getAncestorsChildren = false
@@ -172,18 +173,13 @@ export default defineComponent({
       let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
       let tags = this.event?.interpolated?.replyEvents?.length ? [this.hexEventId, this.event.interpolated.replyEvents[0]] : [this.hexEventId]
 
-      console.log('subAncestorsChildren', tags)
       if (this.sub.ancestorsChildren) this.sub.ancestorsChildren.update({type: 'e', values: tags, kinds: [1], relays})
       else this.sub.ancestorsChildren = await dbStreamTagKind({type: 'e', values: tags, kinds: [1], relays}, events => {
-        console.log('subAncestorsChildren events', events, events.length)
         for (let event of events) {
-        console.log('subAncestorsChildren event', event)
           if (this.event && event.created_at < this.event.created_at) {
             this.processAncestorEvent(event)
-        console.log('processAncestorEvent events', event)
           } else {
             this.processChildEvent(event)
-          console.log('processChildEvent events', event)
           }
         }
       })
@@ -244,3 +240,16 @@ export default defineComponent({
 })
 </script>
 
+<style lang='css' scoped>
+
+.is-reply-connector {
+  width: 8px;
+  opacity: .3;
+  position: absolute;
+  left: 5px;
+  height: 2rem;
+  top: 0;
+  background: var(--q-accent);
+  z-index: 0;
+}
+</style>
