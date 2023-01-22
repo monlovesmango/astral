@@ -1,5 +1,5 @@
 <template>
-  <a :href=getProfile(pubkey) :class='(bordered ? "bordered-avatar" : "") + (hoverEffect ? " hovered-avatar" : "")'>
+  <div :class='(bordered ? "bordered-avatar" : "") + (hoverEffect ? " hovered-avatar" : "")'>
     <q-avatar :rounded='!round' class='relative-position' :size='size' @click.stop="toProfile(pubkey)">
       <img :src="$store.getters.avatar(pubkey)" loading='lazy' async/>
       <div :class='alignRight ? "icon-right" : "icon-left"' class='q-pt-xs'>
@@ -10,7 +10,7 @@
         />
       </div>
     </q-avatar>
-  </a>
+  </div>
 </template>
 
 <script>

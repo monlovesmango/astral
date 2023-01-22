@@ -8,11 +8,10 @@
     style='gap: .1rem'
     :style="alignRight ? 'text-align: right;' : 'text-align: left'"
   >
-    <a
-      :href=getProfile(pubkey)
+    <div
       v-if="$store.getters.name(pubkey)"
       class='text-bold flex row no-wrap items-center'
-      style='gap: .2rem; color: currentColor; text-decoration: none;'
+      style='gap: .2rem;'
       clickable
     >
       {{ $store.getters.name(pubkey) }}
@@ -21,7 +20,7 @@
           following
         </q-tooltip>
       </q-icon>
-    </a>
+    </div>
     <div class='flex row no-wrap items-center' :style='headerMode ? "gap: .3rem;" : "gap: .1rem;"'>
       <BaseButtonNIP05 :pubkey='pubkey' :button-size="headerMode ? 'sm' : 'xs'"/>
       <div v-if='$store.getters.NIP05Id(pubkey)' style='opacity: .9; font-size: 90%; font-weight: 300; line-height: 90%'>
