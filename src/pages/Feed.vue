@@ -253,8 +253,8 @@ export default defineComponent({
     loadUnread() {
       this.loadingUnread = true
       setTimeout(() => {
-        this.feed[this.tab] = this.unreadFeed[this.tab].concat(this.feed[this.tab])
-        this.unreadFeed[this.tab] = []
+        this.feed = this.unreadFeed.concat(this.feed)
+        this.unreadFeed = []
         this.lastLoaded = Math.round(Date.now() / 1000)
         this.loadingUnread = false
       }, 100)

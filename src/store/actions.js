@@ -115,7 +115,7 @@ export async function sendChatMessage(store, {now, pubkey, text, tags}) {
   let ciphertext = '???'
   try {
     if (store.state.keys.priv) {
-      ciphertext = nip04.encrypt(store.state.keys.priv, pubkey, text)
+      ciphertext = await nip04.encrypt(store.state.keys.priv, pubkey, text)
     } else if (
       (await window?.nostr?.getPublicKey?.()) === store.state.keys.pub
     ) {
