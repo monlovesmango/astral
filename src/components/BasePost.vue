@@ -38,9 +38,9 @@
       clickable
       avatar
       top
-      class='relative-position q-px-xs flex row justify-between items-center'
+      class='relative-position q-px-xs flex row no-wrap justify-between items-center'
     >
-      <div class='flex row' style='gap: 1rem;'>
+      <div class='flex row no-wrap items-center' style='gap: 1rem;'>
         <BaseUserAvatar
           :pubkey='event.pubkey'
           :size='highlighted ? "lg" : "md"'
@@ -55,7 +55,7 @@
           </q-item-label>
           <q-space/>
           <q-item-label :line='1' clickable>
-            <BaseUserName :pubkey="event.pubkey" :show-verified='true' class='text-bold' :show-following='true'/>
+            <BaseUserName :pubkey="event.pubkey" :show-verified='true' class='text-bold' :show-following='true' :wrap='true'/>
           </q-item-label>
           <q-item-label
             v-if="
@@ -73,7 +73,7 @@
           </q-item-label>
         </div>
       </div>
-      <div class='flex row items-center post-info' style='z-index: 1;' @click.stop>
+      <div class='flex row no-wrap items-center post-info' style='z-index: 1;' @click.stop>
         <q-item-label class='q-pr-xs' style='opacity: .8; font-size: 90%;'>{{ niceDate(event.created_at) }}</q-item-label>
         <q-fab
           color='secondary'

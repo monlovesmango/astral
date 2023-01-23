@@ -218,8 +218,7 @@
 <script>
 import {LocalStorage} from 'quasar'
 import {nextTick} from 'vue'
-// import {nip05} from 'nostr-tools'
-// import fetch from 'cross-fetch'
+import {nip05} from 'nostr-tools'
 
 import helpersMixin from '../utils/mixin'
 // import { setCssVar } from 'quasar'
@@ -229,7 +228,6 @@ import BaseInformation from 'components/BaseInformation.vue'
 import ThePreferences from 'components/ThePreferences.vue'
 import { createMetaMixin } from 'quasar'
 import { utils } from 'lnurl-pay'
-import fetch from 'cross-fetch'
 
 const metaData = {
   // sets document title
@@ -375,9 +373,10 @@ export default {
       if (this.metadata.created_at) delete this.metadata.created_at
       if (this.metadata.nip05 === '') this.metadata.nip05 = undefined
       if (this.metadata.nip05) {
-        if (
-          (await this.queryName(this.metadata.nip05)) !== this.$store.state.keys.pub
-        ) {
+        try {
+          if ((await nip05.queryProfile(this.metadata.nip05)).pubkey !== this.$store.state.keys.pub)
+            throw new Error('Failed to verify NIP05 identifier on server.')
+        } catch (error) {
           this.$q.notify({
             message: 'Failed to verify NIP05 identifier on server.',
             color: 'warning'
@@ -494,20 +493,6 @@ export default {
       // this.preferences.font = font
       this.$emit('update-font', font)
     },
-    async queryName(fullname) {
-      try {
-        let [name, domain] = fullname.split('@')
-        if (!domain) return null
-
-        let res = await (
-          await fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
-        ).json()
-
-        return res.names && res.names[name]
-      } catch (_) {
-        return null
-      }
-    }
   }
 }
 </script>

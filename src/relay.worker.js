@@ -1,7 +1,7 @@
 import { relayInit } from 'nostr-tools'
 import { matchFilter } from 'nostr-tools'
 // import {debounce} from 'quasar'
-import 'websocket-polyfill'
+// import 'websocket-polyfill'
 
 const relays = {}
 let dbReady = false

@@ -40,7 +40,6 @@ export default function (store) {
         () => { if (streamMainMentionsEose) setUnreadNotifications() },
         () => {
           if (!streamMainMentionsEose) {
-            console.log('streamMainMentionsEose eose')
             streamMainMentionsEose = true
             setUnreadNotifications()
           }
@@ -54,7 +53,6 @@ export default function (store) {
         },
         () => {
           if (!streamMainIncomingMessagesEose) {
-            console.log('streamMainIncomingMessages eose')
             streamMainIncomingMessagesEose = true
             for (let pubkey of Object.keys(streamMainIncomingMessagesPeers)) setUnreadMessages(pubkey)
           }

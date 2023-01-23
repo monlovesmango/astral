@@ -2,9 +2,10 @@ import Tribute from 'tributejs'
 import {shorten, shortenList} from './helpers'
 // import { stringify } from 'JSON'
 import {date} from 'quasar'
-import {nip04} from 'nostr-tools'
+import {nip04, nip19} from 'nostr-tools'
 // import { decode, encode } from 'bech32-buffer'
-import { bech32 } from 'bech32'
+// import { bech32 } from 'bech32'
+import { bech32 } from '@scure/base'
 import * as DOMPurify from 'dompurify'
 // import { utils } from 'lnurl-pay'
 import { Buffer } from 'buffer'
@@ -317,9 +318,11 @@ export default {
 
     bech32ToHex(key) {
       try {
-        let { words } = bech32.decode(key)
-        let buffer = Buffer.from(bech32.fromWords(words))
-        return this.toHexString(buffer)
+        let { data } = nip19.decode(key)
+        return data
+        // let { words } = bech32.decode(key)
+        // let buffer = Buffer.from(bech32.fromWords(words))
+        // return this.toHexString(buffer)
       } catch (error) {
         // console.log('bech32ToHex error: ', error)
       }
@@ -329,9 +332,17 @@ export default {
 // npub19hmfe5xx4w27pr6xd2l8kwdmvnn5fm33llpsg8e8p007c23hasrq9ja0z2
     hexToBech32(key, prefix) {
       try {
+        switch (prefix) {
+          case 'npub':
+            return nip19.npubEncode(key)
+          case 'nsec':
+            return nip19.nsecEncode(key)
+          case 'note':
+            return nip19.noteEncode(key)
+        }
         // let buffer = this.fromHexString(key)
-        let words = bech32.toWords(this.fromHexString(key))
-        return bech32.encode(prefix, words)
+        // let words = bech32.toWords(this.fromHexString(key))
+        // return bech32.encode(prefix, words)
       } catch (error) {
         // continue
       }
@@ -339,26 +350,26 @@ export default {
     },
 // 8c0da4862130283ff9e67d889df264177a508974e2feb96de139804ea66d6168
 // 8c0da4862130283ff9e67d889df264177a508974e2feb96de139804ea66d6168
-    toHexString(buffer) {
-      let hexString = buffer.reduce((s, byte) => {
-        let hex = byte.toString(16)
-        if (hex.length === 1) hex = '0' + hex
-        return s + hex
-      }, '')
-      // hexString = JSON.stringify(JSON.parse(hexString))
-      return hexString
-    },
+    // toHexString(buffer) {
+    //   let hexString = buffer.reduce((s, byte) => {
+    //     let hex = byte.toString(16)
+    //     if (hex.length === 1) hex = '0' + hex
+    //     return s + hex
+    //   }, '')
+    //   // hexString = JSON.stringify(JSON.parse(hexString))
+    //   return hexString
+    // },
 
-    fromHexString(str) {
-      if (str.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(str)) {
-        return null
-      }
-      let buffer = new Uint8Array(str.length / 2)
-      for (let i = 0; i < buffer.length; i++) {
-        buffer[i] = parseInt(str.substr(2 * i, 2), 16)
-      }
-      return buffer
-    },
+    // fromHexString(str) {
+    //   if (str.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(str)) {
+    //     return null
+    //   }
+    //   let buffer = new Uint8Array(str.length / 2)
+    //   for (let i = 0; i < buffer.length; i++) {
+    //     buffer[i] = parseInt(str.substr(2 * i, 2), 16)
+    //   }
+    //   return buffer
+    // },
 
     lnurlToLnAddr(lnurl) {
       try {
@@ -377,7 +388,7 @@ export default {
         if (!utils.isLightningAddress(lnAddr)) return null
         let url = utils.decodeUrlOrAddress(lnAddr)
         let words = bech32.toWords(Buffer.from(url, 'utf8'))
-        let lnurl = bech32.encode('lnurl', words, 2000)
+        let lnurl = bech32.encode('lnurl', words, 5000)
         // let lnurl = utils.parseLnUrl(url)
         return lnurl
       } catch (error) {
@@ -428,7 +439,3 @@ export default {
     }
   }
 }
-
-// npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6
-// npub180cvv07tjdrrgpa0j7j7tmnyl2yr6yr7l8j4s3evf6u64th6gkwsyjh6w6
-// npub1xd3xvvrrxcekvcmz8yengd3nxscrwctx8ymkzdt9x4jk2d35vessj5nvny

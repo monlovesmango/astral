@@ -1,8 +1,6 @@
-import {nip04} from 'nostr-tools'
-// import {nip05} from 'nostr-tools'
+import {nip04, nip05} from 'nostr-tools'
 import {Notify, debounce} from 'quasar'
 import {signAsynchronously} from '../utils/event'
-import fetch from 'cross-fetch'
 import {
   getProfiles,
   dbProfile,
@@ -289,7 +287,7 @@ export async function publishEvent(store, {unpublishedEvent}) {
   try {
     let event = await signAsynchronously(unpublishedEvent, store)
     let publishResult = await publish(event, relays)
-    if (!publishResult) throw new Error(`could not publish ${eventTypeWordy} event`)
+    if (!publishResult) console.log(`no publish confirmation for ${eventTypeWordy} event`)
     await store.dispatch('addEvent', {event})
     if (event.kind === 0) store.dispatch('handleAddingProfileEventToCache', event)
     else if (event.kind === 3) {
@@ -311,6 +309,7 @@ export async function publishEvent(store, {unpublishedEvent}) {
     }
     return event
   } catch (error) {
+    console.log(`could not publish ${eventTypeWordy} event: ${error}`)
     Notify.create({
       message: `could not publish ${eventTypeWordy} event: ${error}`,
       color: 'negative'
@@ -419,17 +418,18 @@ export async function useNip05(store, {metadata}) {
     if (cached && cached.when > Date.now() / 1000 - 60 * 60) {
       if (cached.pubkey !== metadata.pubkey) delete metadata.nip05
     } else {
-      let checked
+      let pubkey
       try {
-        checked = await queryName(metadata.nip05)
+        let profile = await nip05.queryProfile(metadata.nip05)
+        pubkey = profile.pubkey
         store.commit('addToNIP05VerificationCache', {
-          pubkey: checked,
+          pubkey,
           identifier: metadata.nip05
         })
       } catch (_) {
-        checked = ''
+        pubkey = ''
       }
-      if (metadata.pubkey !== checked) delete metadata.nip05
+      if (metadata.pubkey !== pubkey) delete metadata.nip05
     }
   }
   store.commit('addProfileToCache', metadata)
@@ -440,19 +440,4 @@ export async function handleAddingProfileEventToCache(store, event) {
   let metadata = metadataFromEvent(event)
   store.commit('addProfileToCache', metadata)
   store.dispatch('useNip05', {metadata})
-}
-
-async function queryName(fullname) {
-  try {
-    let [name, domain] = fullname.split('@')
-    if (!domain) return null
-
-    let res = await (
-      await fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
-    ).json()
-
-    return res.names && res.names[name]
-  } catch (_) {
-    return null
-  }
 }

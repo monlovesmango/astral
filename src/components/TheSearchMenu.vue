@@ -198,8 +198,7 @@ export default defineComponent({
           }
         // }
         console.log('this.domainUsers', this.domainUsers)
-        let pubkey = await nip05.queryName(this.searchingProfile)
-        console.log('queryName returned: ', pubkey)
+        let {pubkey} = await nip05.queryProfile(this.searchingProfile)
         if (pubkey) {
           this.toProfile(pubkey)
           this.searchingProfile = ''
