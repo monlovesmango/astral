@@ -271,7 +271,7 @@ export default defineComponent({
       let relays = Object.keys(this.$store.state.relays).length ? Object.keys(this.$store.state.relays) : Object.keys(this.$store.state.defaultRelays)
       let until = this.threads.length ? this.threads[this.threads.length - 1][0].created_at : Math.round(Date.now() / 1000)
       let notes = await getNotes({authors: [this.hexPubkey], until, limit: 100, relays})
-      if (notes.length < 100) this.reachedEnd = true
+      if (notes.length === 0) this.reachedEnd = true
       let threads = []
       this.processUserNotes(notes, threads)
       this.threads = this.threads.concat(threads)

@@ -189,7 +189,7 @@ module.exports = configure(function (ctx) {
         description: `decentralized social platform (nostr client)`,
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#ffffff',
+        background_color: '#1f1f1f',
         theme_color: '#027be3',
         icons: [
           {

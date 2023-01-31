@@ -182,29 +182,25 @@ export default defineComponent({
       }
 
       if (this.searchingProfile.match(/^([a-z0-9-_.\u00C0-\u1FFF\u2800-\uFFFD]*@)?[a-z0-9-_.]+[.]{1}[a-z0-9-_.]+$/)) {
-        // if (!this.searchingProfile.match(/^[a-z0-9-_.\u00C0-\u1FFF\u2800-\uFFFD]?@/)) {
           if (this.searchingProfile.match(/^@/) || !this.searchingProfile.match(/@/)) {
-          //   this.searchingProfile = '_' + this.searchingProfile
-          // else if (!this.searchingProfile.match(/@/)) this.searchingProfile = '_@' + this.searchingProfile
-          this.domainNames = await nip05.searchDomain(this.domain)
-          // this.domainUsers
-          if (this.domainUsers.length || this.domainDefaultPubkey) {
-            if (this.domainDefaultPubkey) this.useProfile(this.domainDefaultPubkey)
-            if (this.domainUsers.length) this.domainUsers.forEach((user) => this.useProfile(user.pubkey))
-            this.searching = false
-            this.domainMode = true
-            return
+            this.domainNames = await nip05.searchDomain(this.domain)
+            if (this.domainUsers.length || this.domainDefaultPubkey) {
+              if (this.domainDefaultPubkey) this.useProfile(this.domainDefaultPubkey)
+              if (this.domainUsers.length) this.domainUsers.forEach((user) => this.useProfile(user.pubkey))
+              this.searching = false
+              this.domainMode = true
+              return
+            }
+          } else {
+            console.log('this.domainUsers', this.domainUsers)
+            let {pubkey} = await nip05.queryProfile(this.searchingProfile.toLowerCase())
+            if (pubkey) {
+              this.toProfile(pubkey)
+              this.searchingProfile = ''
+              this.searching = false
+              return
+            }
           }
-          }
-        // }
-        console.log('this.domainUsers', this.domainUsers)
-        let {pubkey} = await nip05.queryProfile(this.searchingProfile)
-        if (pubkey) {
-          this.toProfile(pubkey)
-          this.searchingProfile = ''
-          this.searching = false
-          return
-        }
       }
       this.searching = false
       Notify.create({

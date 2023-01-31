@@ -374,7 +374,7 @@ export default {
       if (this.metadata.nip05 === '') this.metadata.nip05 = undefined
       if (this.metadata.nip05) {
         try {
-          if ((await nip05.queryProfile(this.metadata.nip05)).pubkey !== this.$store.state.keys.pub)
+          if ((await nip05.queryProfile(this.metadata.nip05.toLowerCase())).pubkey !== this.$store.state.keys.pub)
             throw new Error('Failed to verify NIP05 identifier on server.')
         } catch (error) {
           this.$q.notify({

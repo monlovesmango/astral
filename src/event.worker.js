@@ -55,7 +55,7 @@ function handleDbMessage({ data }) {
       //   }
       // }
       if (!Object.keys(ticketResults[currentTicketId].events).length) delete ticketResults[currentTicketId]
-      else ticketResults[currentTicketId].end = Math.floor(Date.now() / 1000)
+      else ticketResults[currentTicketId].end = Date.now()
       currentTicketId = null
   // if (log) console.log('handleDbMessage end', currentTicket, currentTicketEvents, completedQueue)
       return
@@ -74,7 +74,7 @@ function run() {
     //   self.postMessage({ action: 'complete', ticket })
     //   ticket = tickets.shift()
     // }
-    let completedTicketIds = Object.values(ticketResults).filter(({end}) => end < Math.floor(Date.now() / 1000) - 1).map(({ticket}) => ticket.id)
+    let completedTicketIds = Object.values(ticketResults).filter(({end}) => end < Date.now() - 1000).map(({ticket}) => ticket.id)
     // console.log('eventworker interval starting', ticketResults, completedTicketIds)
     for (let ticketId of completedTicketIds) {
       let { ticket, events, end } = ticketResults[ticketId]

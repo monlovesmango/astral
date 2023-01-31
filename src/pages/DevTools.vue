@@ -11,6 +11,7 @@
       >
         <q-tab name="keyConverter" label='key converter' />
         <q-tab name="sqlQuery" label='sql query' />
+        <q-tab name="nip05Tester" label='nip05 Tester' />
       </q-tabs>
       <!-- <div class="text-bold">sql query</div> -->
       <q-tab-panels v-model="tab">
@@ -35,6 +36,11 @@
         <q-tab-panel name="sqlQuery">
           <TheSqlEditor/>
         </q-tab-panel>
+        <q-tab-panel name="nip05Tester">
+          <q-input v-model='nip05Id' filled dense label='enter nip05 here' class='full-width'/>
+          <q-btn spread label='test' color='primary' outline class='full-width q-mt-md' @click='fetchNip05'/>
+          <pre id='nip05-response'></pre>
+        </q-tab-panel>
       </q-tab-panels>
     </div>
   </q-page>
@@ -46,6 +52,7 @@ import helpersMixin from '../utils/mixin'
 import { Notify, createMetaMixin } from 'quasar'
 import BaseButtonCopy from '../components/BaseButtonCopy'
 import TheSqlEditor from '../components/TheSqlEditor'
+import { nip05 } from 'nostr-tools'
 
 const metaData = {
   // sets document title
@@ -84,7 +91,8 @@ export default defineComponent({
         hex: '',
         bech32: '',
         prefix: '',
-      }
+      },
+      nip05Id: '',
     }
   },
 
@@ -102,7 +110,39 @@ export default defineComponent({
     //   let proxySrc = `https://api.codetabs.com/v1/proxy?quest=${src}`
     //   e.target.src = proxySrc
     // }
-  }
+    async fetchNip05() {
+        let profile = await nip05.queryProfile(this.nip05Id.toLowerCase())
+        // let profile = await nip05.queryProfile(this.nip05Id)
+        console.log('nip05 response', profile)
+        document.querySelector('#nip05-response').innerText = JSON.stringify(profile, null, 2)
+    },
+//  async queryProfile(fullname) {
+//   let [name, domain] = fullname.toLowerCase().split('@')
+
+//   if (!domain) {
+//     // if there is no @, it is because it is just a domain, so assume the name is "_"
+//     domain = name
+//     name = '_'
+//   }
+
+//   if (!name.match(/^[a-z0-9-_]+$/)) return null
+
+//   let res = await (
+//     await fetch(`https://${domain}/.well-known/nostr.json?name=${name}`)
+//   ).json()
+//         console.log('nip05 response', res)
+
+//   if (!res?.names?.[name]) return null
+
+//   let pubkey = res.names[name]
+//   let relays = (res.relays?.[pubkey] || []) // nip35
+
+//   return {
+//     pubkey,
+//     relays
+//   }
+//  }
+}
 })
 </script>
 

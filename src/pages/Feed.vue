@@ -27,8 +27,8 @@
         />
         <div v-if='index === items.length - 6' v-intersection='handleIntersectionObserver'></div>
       </div>
-          <div v-if='loadingMore' class='row justify-center'>
-            <q-spinner-orbit color="accent" size='sm' />
+          <div v-if='loadingMore' class='row justify-center q-py-sm'>
+            <q-spinner-orbit color="accent" size='md' />
           </div>
       <!-- </q-infinite-scroll> -->
       <!-- </div> -->
@@ -311,6 +311,7 @@ export default defineComponent({
 
     handleIntersectionObserver(e) {
       // console.log('handleIntersectionObserver', e)
+      if (this.loadingMore) return
       if (e.isIntersecting) this.loadMore()
     },
 

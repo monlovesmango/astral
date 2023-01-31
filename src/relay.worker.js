@@ -1,7 +1,4 @@
-import { relayInit } from 'nostr-tools'
-import { matchFilter } from 'nostr-tools'
-// import {debounce} from 'quasar'
-// import 'websocket-polyfill'
+import { relayInit, matchFilter } from 'nostr-tools'
 
 const relays = {}
 let dbReady = false
@@ -60,8 +57,9 @@ function handleDbMessage({ data }) {
   let { status } = data
   if (status === 'ready') {
     if (Object.keys(dbTicketQueue).length) advanceTicketsToDb()
-    else dbReady = 'true'
-  } else dbReady = 'false'
+    else dbReady = true
+    // dbReady = true
+  } else dbReady = false
 }
 
 function advanceTicketsToDb() {
