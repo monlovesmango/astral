@@ -163,10 +163,10 @@ export default defineComponent({
       }
 
       this.searching = true
-      this.searchingProfile = this.searchingProfile.trim().toLowerCase()
+      this.searchingProfile = this.searchingProfile.trim()
 
-      if (this.searchingProfile.match(/^[a-f0-9]{64}$/)) {
-        this.toProfile(this.searchingProfile)
+      if (this.searchingProfile.match(/^[a-fA-F0-9]{64}$/)) {
+        this.toProfile(this.searchingProfile.toLowerCase())
         this.searchingProfile = ''
         this.searching = false
         return
@@ -181,7 +181,7 @@ export default defineComponent({
         return
       }
 
-      if (this.searchingProfile.match(/^([a-z0-9-_.\u00C0-\u1FFF\u2800-\uFFFD]*@)?[a-z0-9-_.]+[.]{1}[a-z0-9-_.]+$/)) {
+      if (this.searchingProfile.match(/^([a-zA-Z0-9-_.\u00C0-\u1FFF\u2800-\uFFFD]*@)?[a-zA-Z0-9-_.]+[.]{1}[a-zA-Z0-9-_.]+$/)) {
           if (this.searchingProfile.match(/^@/) || !this.searchingProfile.match(/@/)) {
             this.domainNames = await nip05.searchDomain(this.domain)
             if (this.domainUsers.length || this.domainDefaultPubkey) {
@@ -192,7 +192,6 @@ export default defineComponent({
               return
             }
           } else {
-            console.log('this.domainUsers', this.domainUsers)
             let {pubkey} = await nip05.queryProfile(this.searchingProfile)
             if (pubkey) {
               this.toProfile(pubkey)
