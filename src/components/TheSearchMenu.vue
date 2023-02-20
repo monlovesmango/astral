@@ -193,7 +193,7 @@ export default defineComponent({
             }
           } else {
             console.log('this.domainUsers', this.domainUsers)
-            let {pubkey} = await nip05.queryProfile(this.searchingProfile.toLowerCase())
+            let {pubkey} = await nip05.queryProfile(this.searchingProfile)
             if (pubkey) {
               this.toProfile(pubkey)
               this.searchingProfile = ''

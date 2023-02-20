@@ -111,7 +111,7 @@ export default defineComponent({
     //   e.target.src = proxySrc
     // }
     async fetchNip05() {
-        let profile = await nip05.queryProfile(this.nip05Id.toLowerCase())
+        let profile = await nip05.queryProfile(this.nip05Id)
         // let profile = await nip05.queryProfile(this.nip05Id)
         console.log('nip05 response', profile)
         document.querySelector('#nip05-response').innerText = JSON.stringify(profile, null, 2)

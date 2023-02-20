@@ -420,7 +420,7 @@ export async function useNip05(store, {metadata}) {
     } else {
       let pubkey
       try {
-        let profile = await nip05.queryProfile(metadata.nip05.toLowerCase())
+        let profile = await nip05.queryProfile(metadata.nip05)
         pubkey = profile.pubkey
         store.commit('addToNIP05VerificationCache', {
           pubkey,
