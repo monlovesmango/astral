@@ -418,7 +418,9 @@ body {
   font-family: var(--q-font), "Helvetica Neue", Helvetica, Arial, 'Noto Color Emoji', sans-serif;
 }
 #layout-container {
+  overflow: scroll;
   display: flex;
+  align-items: flex-start;
   justify-content: center;
   width: 100%;
   position: relative;
@@ -429,7 +431,9 @@ body {
 #left-drawer, #right-drawer {
   display: none;
   transition: all 1s linear;
-  margin: .5rem;
+  padding: .5rem;
+  position: sticky;
+  top: 0;
 }
 #left-drawer {
 }
@@ -459,6 +463,10 @@ body,
 }
 #post-entry {
   border-top: 1px solid var(--q-accent);
+  position: sticky;
+  bottom: 0;
+  background-color: var(--q-background);
+  z-index: 2;
 }
 #post-entry .post-entry-form {
   border: 2px solid var(--q-primary);
@@ -522,7 +530,6 @@ body,
   }
   #layout-container {
     justify-content: flex-start;
-    overflow: hidden;
     height: 100vh;
   }
   #left-drawer {
@@ -541,18 +548,18 @@ body,
     width: 100%;
     min-width: 550px;
     max-width: 650px;
-    height: 100vh;
     padding-bottom: 0;
     flex: 1;
     flex-shrink: 1;
     flex-grow: 1;
   }
   #middle-page .q-page-container {
-    overflow: auto;
-    height: 100%;
     flex: 1;
     flex-shrink: 1;
     flex-grow: 1;
+  }
+  .q-page-container {
+    overflow: visible;
   }
   #post-entry {
     height: fit-content;
@@ -568,7 +575,6 @@ body,
 @media screen and (min-width: 700px) {
   #layout-container {
     justify-content: flex-start;
-    overflow: hidden;
     height: 100vh;
   }
   #left-drawer, #right-drawer {

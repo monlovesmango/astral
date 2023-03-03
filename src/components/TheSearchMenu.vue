@@ -1,5 +1,5 @@
 <template>
-  <div class='fit flex column no-wrap'>
+  <div class='fit flex column no-wrap overflow-hidden' style="max-height: calc(100vh - 0.5rem * 2);">
     <q-card-section class='q-pa-sm'>
       <q-form
         @submit="searchProfile"
@@ -63,7 +63,7 @@
         </div>
       </div>
     <q-card-section v-if='$store.state.keys.pub' class='no-padding' style='overflow-y: auto;'>
-      <div v-if='$store.state.follows.length' class='q-mt-xs q-pl-sm'>
+      <div v-if='$store.state.follows.length' class='q-mt-xs q-mb-s q-pl-sm'>
         <q-list v-if="!reordering">
           <BaseUserCard
             v-for="pubkey in $store.state.follows"
